@@ -6,7 +6,7 @@ import 'package:quiz_project/controllers/AuthController.dart';
 
 
 
-// import '../home/storage_keys.dart'; // No longer directly needed
+// import '../ui/storage_keys.dart'; // No longer directly needed
 // import 'UserModel.dart'; // No longer directly needed, AuthController handles models
 
 class LoginScreen extends StatelessWidget {

@@ -3,19 +3,21 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
-import 'package:quiz_project/home/profile_screen.dart';
+import 'package:quiz_project/ui/home_view.dart';
+import 'package:quiz_project/ui/map_screen.dart';
+import 'package:quiz_project/ui/profile_screen.dart';
+
 
 // Remove GetStorage import if not used for other purposes in this widget
 // import 'package:get_storage/get_storage.dart';
-// import 'package:quiz_project/home/storage_keys.dart'; // No longer directly needed
+// import 'package:quiz_project/ui/storage_keys.dart'; // No longer directly needed
 
 import '../controllers/AuthController.dart';
-import '../home/home_view.dart';
-import '../home/map_screen.dart';
-import '../home/settings_screen.dart';
-import '../home/theme_service.dart';
+
+import '../utils/theme_service.dart';
 import 'FavoritesScreen.dart';
 import 'add_job_screen.dart';
+import 'settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

@@ -155,7 +155,9 @@ class EditJobScreen extends StatelessWidget {
               // Save Job Button (Submit button)
               Obx(
                     () => ElevatedButton.icon(
-                  onPressed: controller.isLoading.value ? null : controller.submitJob,
+                  onPressed: (){
+                    controller.isLoading.value ? null : controller.submitJob().then((_) => Get.back());
+                  },
                   icon: controller.isLoading.value ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.save),
                   label: Text(controller.isLoading.value ? 'جاري الحفظ...' : 'حفظ التعديلات', style: GoogleFonts.tajawal()),
                   style: ElevatedButton.styleFrom(

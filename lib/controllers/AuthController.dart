@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart'; // Required for Get.snackbar colors
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:quiz_project/utils/storage_keys.dart';
 
 import '../core/models.dart'; // Contains UserModel
-import '../home/storage_keys.dart'; // Contains your storage keys
 
 class AuthController extends GetxController {
   final box = GetStorage();
@@ -73,7 +73,7 @@ class AuthController extends GetxController {
         colorText: Colors.white);
 
     // Navigate to the main screen after successful registration and login
-    Get.offAllNamed('/home');
+    Get.offAllNamed('/ui');
   }
 
   // Logs in an existing user
@@ -102,7 +102,7 @@ class AuthController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white);
-      Get.offAllNamed('/home'); // Navigate to MainScreen, which is '/home'
+      Get.offAllNamed('/ui'); // Navigate to MainScreen, which is '/ui'
     } else {
       Get.snackbar(
         'خطأ',

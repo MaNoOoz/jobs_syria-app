@@ -3,11 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:quiz_project/home/add_job_screen.dart';
+
 
 import '../controllers/AuthController.dart';
 import '../controllers/job_controller.dart';
 import '../core/models.dart'; // JobModel
+import 'add_job_screen.dart';
+import 'edit_job_screen.dart';
 import 'job_details_screen.dart'; // To view job details
 
 class MyAdsScreen extends StatefulWidget {
@@ -166,7 +168,7 @@ class _UserJobListItem extends StatelessWidget {
               tooltip: 'تعديل الإعلان',
               onPressed: () {
                 // Navigate to EditJobScreen, passing the job data
-                // Get.to(() => EditJobScreen(job: job));
+                Get.to(() => EditJobScreen(job: job));
               },
             ),
             // Delete button with confirmation dialog

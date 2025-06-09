@@ -33,7 +33,7 @@ class AppDrawer extends StatelessWidget {
             _buildTile(
               icon: FontAwesomeIcons.house,
               title: 'الرئيسية',
-              onTap: () => Get.offAllNamed('/home'),
+              onTap: () => Get.offAllNamed('/ui'),
             ),
             _buildTile(
               icon: FontAwesomeIcons.mapLocationDot,

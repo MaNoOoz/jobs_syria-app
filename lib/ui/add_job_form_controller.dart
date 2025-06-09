@@ -1,15 +1,14 @@
 // lib/controllers/add_job_form_controller.dart
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:uuid/uuid.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // For Timestamp
+import 'package:get/get.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:uuid/uuid.dart';
 
 import '../controllers/AuthController.dart';
-import '../core/models.dart'; // Make sure JobModel and ContactOption/ContactType are here
 import '../controllers/job_controller.dart';
+import '../core/models.dart'; // Make sure JobModel and ContactOption/ContactType are here
 import 'map_picker_screen.dart'; // Make sure MapPickerScreen is imported
 
 class AddJobFormController extends GetxController {
@@ -122,13 +121,29 @@ class AddJobFormController extends GetxController {
       if (placemarks.isNotEmpty) {
         final Placemark place = placemarks.first;
         String cityName = place.locality ?? place.administrativeArea ?? '';
+        // Build full address
+        String fullAddress = [
+          place.street,
+          place.subLocality,
+          place.locality,
+          place.administrativeArea,
+          place.country
+        ].where((part) => part != null && part.isNotEmpty).join(', ');
+        debugPrint('Full Address: $fullAddress');
+
         cityController.text = cityName.isNotEmpty ? cityName : 'غير معروفة'; // Set to 'Unknown' if not found
+        locationTextController.text = fullAddress.isNotEmpty ? fullAddress : 'موقع غير معروف';
+
       } else {
         cityController.text = 'غير معروفة';
+        locationTextController.text = 'موقع غير معروف';
+
       }
     } catch (e) {
       debugPrint('Reverse geocoding failed: $e');
       cityController.text = 'خطأ في تحديد المدينة';
+      locationTextController.text = 'خطأ في تحديد الموقع';
+
       Get.snackbar('خطأ', 'فشل تحديد المدينة تلقائيًا: $e', snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red, colorText: Colors.white);
     }
   }
@@ -323,7 +338,7 @@ class AddJobFormController extends GetxController {
 
           // If updateJob completes without throwing, it's a success
           _jobController.fetchOwnerJobs(currentUserId); // Refresh owner's jobs after updating
-          Get.back(); // Go back from edit screen
+          // Get.back(); // Go back from edit screen
           // The snackbar for success is handled by JobController.updateJob
           // Get.snackbar('نجاح', 'تم تحديث الإعلان بنجاح!', snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.green, colorText: Colors.white);
         }

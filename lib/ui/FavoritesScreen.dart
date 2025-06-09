@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:quiz_project/home/storage_keys.dart';
+
+import 'package:quiz_project/utils/storage_keys.dart';
 
 import '../auth/UserModel.dart';
 import '../controllers/job_controller.dart';

@@ -6,7 +6,7 @@ import 'package:quiz_project/controllers/AuthController.dart';
 
 
 // import '../core/models.dart'; // No longer directly needed
-// import '../home/storage_keys.dart'; // No longer directly needed
+// import '../ui/storage_keys.dart'; // No longer directly needed
 // import 'UserModel.dart'; // No longer directly needed
 
 class RegisterScreen extends StatelessWidget {
