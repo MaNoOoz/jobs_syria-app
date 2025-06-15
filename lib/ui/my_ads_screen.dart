@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 
 import '../controllers/AuthController.dart';
-import '../controllers/job_controller.dart';
+import '../controllers/home_controller.dart';
 import '../core/models.dart'; // JobModel
 import 'add_job_screen.dart';
 import 'edit_job_screen.dart';
@@ -21,7 +21,7 @@ class MyAdsScreen extends StatefulWidget {
 
 class _MyAdsScreenState extends State<MyAdsScreen> {
   final AuthController authController = Get.find<AuthController>();
-  final JobController jobController = Get.find<JobController>();
+  final HomeController jobController = Get.find<HomeController>();
 
   @override
   void initState() {
@@ -137,7 +137,7 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
 class _UserJobListItem extends StatelessWidget {
   final JobModel job;
   final ColorScheme cs;
-  final JobController jobController;
+  final HomeController jobController;
 
   const _UserJobListItem({required this.job, required this.cs, required this.jobController});
 

@@ -7,12 +7,12 @@ import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
 
 import '../controllers/AuthController.dart';
-import '../controllers/job_controller.dart';
+import '../controllers/home_controller.dart';
 import '../core/models.dart'; // Make sure JobModel and ContactOption/ContactType are here
 import 'map_picker_screen.dart'; // Make sure MapPickerScreen is imported
 
 class AddJobFormController extends GetxController {
-  final JobController _jobController = Get.find<JobController>();
+  final HomeController _jobController = Get.find<HomeController>();
   final AuthController _authController = Get.find<AuthController>(); // Injected AuthController
 
   // Add this property to hold the job being edited (if any)

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../controllers/job_controller.dart';
+import '../../../controllers/home_controller.dart';
 
 class JobFilterSortBottomSheet extends StatefulWidget {
   final VoidCallback? onClearSearch;
@@ -15,7 +15,7 @@ class JobFilterSortBottomSheet extends StatefulWidget {
 }
 
 class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
-  final JobController _jobController = Get.find<JobController>();
+  final HomeController _jobController = Get.find<HomeController>();
 
   late String? _localSelectedCity;
   late String? _localSelectedJobType;

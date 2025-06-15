@@ -8,7 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:quiz_project/utils/storage_keys.dart';
 
 import '../auth/UserModel.dart';
-import '../controllers/job_controller.dart';
+import '../controllers/home_controller.dart';
 import '../core/models.dart'; // JobModel, ContactType, etc.
 import 'job_details_screen.dart';
 
@@ -23,7 +23,7 @@ class FavoritesScreen extends StatefulWidget {
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
-  final JobController _jobController = Get.find<JobController>();
+  final HomeController _jobController = Get.find<HomeController>();
   final box = GetStorage();
 
   UserModel? _currentUser;
