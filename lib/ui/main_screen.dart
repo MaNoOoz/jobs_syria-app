@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
+import 'package:quiz_project/routes/app_pages.dart';
 import 'package:quiz_project/ui/home_view.dart';
 import 'package:quiz_project/ui/map_screen.dart';
 import 'package:quiz_project/ui/profile_screen.dart';
@@ -88,7 +89,7 @@ class _MainScreenState extends State<MainScreen> {
             _selectedIndex == 0 && currentUser.role == 'employer'
                 ? FloatingActionButton.extended(
                   onPressed: () {
-                    Get.to(() => const AddJobScreen());
+                    Get.toNamed(Routes.ADD_NEW);
                   },
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('إضافة وظيفة'),

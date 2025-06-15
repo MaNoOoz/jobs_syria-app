@@ -1,27 +1,30 @@
 // lib/screens/edit_job_screen.dart
+// lib/screens/edit_job_screen.dart
+import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 
 import '../core/models.dart'; // Ensure JobModel is here
 import 'add_job_form_controller.dart'; // Import the updated controller
 
 class EditJobScreen extends StatelessWidget {
-  final JobModel job; // The job to be edited, passed to this screen
+  final JobModel job;
 
   const EditJobScreen({super.key, required this.job});
 
   @override
   Widget build(BuildContext context) {
-    // IMPORTANT: Initialize the controller with the job data
-    // Get.put ensures the controller is created/found and its onInit is called
     final AddJobFormController controller = Get.put(AddJobFormController(initialJob: job));
-
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('تعديل الإعلان', style: GoogleFonts.tajawal(fontWeight: FontWeight.bold)),
+        title: Text(
+          'تعديل الإعلان',
+          style: GoogleFonts.tajawal(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         backgroundColor: cs.primary,
         foregroundColor: cs.onPrimary,
@@ -32,11 +35,13 @@ class EditJobScreen extends StatelessWidget {
           key: controller.formKey,
           child: ListView(
             children: [
-              // --- Reused Form Fields from AddJobScreen ---
               // Job Title
               TextFormField(
                 controller: controller.titleController,
-                decoration: InputDecoration(labelText: 'عنوان الوظيفة', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'عنوان الوظيفة',
+                  border: OutlineInputBorder(),
+                ),
                 validator: controller.validateRequired,
                 style: GoogleFonts.tajawal(),
               ),
@@ -45,7 +50,10 @@ class EditJobScreen extends StatelessWidget {
               // Job Description
               TextFormField(
                 controller: controller.descController,
-                decoration: InputDecoration(labelText: 'وصف الوظيفة', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'وصف الوظيفة',
+                  border: OutlineInputBorder(),
+                ),
                 maxLines: 3,
                 validator: controller.validateRequired,
                 style: GoogleFonts.tajawal(),
@@ -53,74 +61,162 @@ class EditJobScreen extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Job Type Dropdown
-              Obx(
-                    () => DropdownButtonFormField<String>(
-                  decoration: InputDecoration(labelText: 'نوع الوظيفة', border: OutlineInputBorder()),
-                  value: controller.selectedJobType.value.isEmpty ? null : controller.selectedJobType.value,
-                  items: controller.jobTypes.map((type) => DropdownMenuItem(value: type, child: Text(type, style: GoogleFonts.tajawal()))).toList(),
-                  onChanged: controller.onJobTypeChanged,
-                  validator: controller.validateRequired,
-                  style: GoogleFonts.tajawal(color: cs.onSurface),
-                ),
+              Obx(() =>
+                  DropdownButtonFormField<String>(
+                    value: controller.selectedJobType.value,
+                    decoration: const InputDecoration(
+                      labelText: 'نوع الوظيفة',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: controller.jobTypes
+                        .map((type) =>
+                        DropdownMenuItem(
+                          value: type,
+                          child: Text(type, style: GoogleFonts.tajawal()),
+                        ))
+                        .toList(),
+                    onChanged: (value) => controller.selectedJobType.value = value!,
+                    validator: controller.validateRequired,
+                    style: GoogleFonts.tajawal(color: cs.onSurface),
+                  )),
+              const SizedBox(height: 12),
+
+              // Remote Work Toggle
+              Obx(() =>
+                  SwitchListTile(
+                    title: Text(
+                      'وظيفة عن بعد؟',
+                      style: GoogleFonts.tajawal(),
+                    ),
+                    value: controller.isRemote.value,
+                    onChanged: controller.toggleRemote,
+                    secondary: Icon(
+                      controller.isRemote.value ? Icons.cloud : Icons.location_city,
+                    ),
+                  )),
+              const SizedBox(height: 12),
+
+              // Salary Range
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: controller.minSalaryController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'الحد الأدنى للراتب',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: controller.validateNumber,
+                      style: GoogleFonts.tajawal(),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: controller.maxSalaryController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'الحد الأقصى للراتب',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: controller.validateNumber,
+                      style: GoogleFonts.tajawal(),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
 
-              // Conditional Location Fields (City + Map Picker)
+              // Location Fields
               Obx(() {
-                final isRemote = controller.selectedJobType.value == 'عن بعد';
+                final isRemote = controller.isRemote.value;
                 return Column(
                   children: [
-                    // City
-                    TextFormField(
-                      controller: controller.cityController,
+                    // City Dropdown
+                    DropdownButtonFormField<String>(
+                      value: controller.cityController.text.isEmpty
+                          ? null
+                          : controller.cityController.text,
                       decoration: InputDecoration(
                         labelText: 'المدينة',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         enabled: !isRemote,
-                        fillColor: isRemote ? cs.surfaceContainerHigh : null, // Use theme colors
-                        filled: isRemote,
                       ),
-                      validator: isRemote ? null : controller.validateRequired,
+                      items: AddJobFormController.cities
+                          .map((city) =>
+                          DropdownMenuItem(
+                            value: city,
+                            child: Text(city, style: GoogleFonts.tajawal()),
+                          ))
+                          .toList(),
+                      onChanged: isRemote
+                          ? null
+                          : (value) => controller.cityController.text = value!,
+                      validator: (value) {
+                        if (!isRemote) {
+                          return controller.validateRequired(value);
+                        }
+                        return null;
+                      },
+                      style: GoogleFonts.tajawal(color: cs.onSurface),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Location Text
+                    TextFormField(
+                      controller: controller.locationTextController,
+                      decoration: InputDecoration(
+                        labelText: 'الموقع',
+                        border: const OutlineInputBorder(),
+                        enabled: !isRemote,
+                      ),
+                      validator: (value) {
+                        if (!isRemote) {
+                          return controller.validateRequired(value);
+                        }
+                        return null;
+                      },
                       style: GoogleFonts.tajawal(),
                     ),
                     const SizedBox(height: 12),
 
-                    // Location Text + Map Picker Button
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: controller.locationTextController,
-                            decoration: InputDecoration(
-                              labelText: 'الموقع (الإحداثيات)',
-                              hintText: isRemote ? 'لا ينطبق على الوظائف عن بعد' : 'انقر على أيقونة الخريطة',
-                              border: OutlineInputBorder(),
-                              enabled: false, // User cannot type here directly, only via map
-                              fillColor: isRemote ? cs.surfaceContainerHigh : null,
-                              filled: isRemote,
-                            ),
-                            validator: isRemote ? null : controller.validateRequired,
-                            style: GoogleFonts.tajawal(),
-                          ),
+                    // Map Picker Button
+                    if (!isRemote)
+                      ElevatedButton.icon(
+                        onPressed: () => controller.pickLocation(context),
+                        icon: const Icon(Icons.map),
+                        label: Text(
+                          'اختيار الموقع من الخريطة',
+                          style: GoogleFonts.tajawal(),
                         ),
-                        isRemote
-                            ? const SizedBox.shrink()
-                            : IconButton(
-                          icon: const Icon(Icons.map),
-                          onPressed: controller.pickLocationOnMap,
-                          tooltip: 'اختر من الخريطة',
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                      ],
-                    ),
+                      ),
                     const SizedBox(height: 12),
+
+                    // Coordinates Display
+                    Text(
+                      'الإحداثيات: ${controller.latitude.value.toStringAsFixed(5)}, ${controller.longitude.value.toStringAsFixed(5)}',
+                      style: GoogleFonts.tajawal(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 );
               }),
+              const SizedBox(height: 12),
 
               // Hashtags
               TextFormField(
                 controller: controller.hashtagsController,
-                decoration: InputDecoration(labelText: 'الهاشتاغات (مفصولة بفواصل، تبدأ بـ #)', hintText: 'مثال: #برمجة,#تصميم,#هندسة', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'الكلمات المفتاحية (مثل: #مبرمج #جافا)',
+                  border: OutlineInputBorder(),
+                ),
+                validator: controller.validateHashtags,
                 style: GoogleFonts.tajawal(),
               ),
               const SizedBox(height: 12),
@@ -129,42 +225,58 @@ class EditJobScreen extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: () => controller.openAddContactDialog(context),
                 icon: const Icon(Icons.add_link),
-                label: Text('أضف طريقة تواصل', style: GoogleFonts.tajawal()),
+                label: Text(
+                  'أضف طريقة تواصل',
+                  style: GoogleFonts.tajawal(),
+                ),
               ),
               const SizedBox(height: 12),
 
-              // Display Current Contact Options
-              Obx(
-                    () => Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: controller.contactOptions.map((opt) {
-                    return Chip(
-                      label: Text('${opt.type.name}: ${opt.value}', style: GoogleFonts.tajawal()),
-                      deleteIcon: const Icon(Icons.close),
-                      onDeleted: () => controller.removeContactOption(opt),
-                      avatar: const Icon(Icons.link, size: 16),
-                      backgroundColor: cs.secondaryContainer,
-                      labelStyle: TextStyle(color: cs.onSecondaryContainer),
-                    );
-                  }).toList(),
-                ),
-              ),
+              // Contact Options Chips
+              Obx(() =>
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: controller.contactOptions.map((opt) {
+                      return Chip(
+                        label: Text(
+                          '${opt.type.displayName}: ${opt.value}',
+                          style: GoogleFonts.tajawal(),
+                        ),
+                        deleteIcon: const Icon(Icons.close),
+                        onDeleted: () => controller.removeContactOption(opt),
+                        avatar: const Icon(Icons.link, size: 16),
+                        backgroundColor: cs.secondaryContainer,
+                        labelStyle: TextStyle(color: cs.onSecondaryContainer),
+                      );
+                    }).toList(),
+                  )),
               const SizedBox(height: 20),
 
-              // Save Job Button (Submit button)
-              Obx(
-                    () => ElevatedButton.icon(
-                  onPressed: (){
-                    controller.isLoading.value ? null : controller.submitJob().then((_) => Get.back());
-                  },
-                  icon: controller.isLoading.value ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.save),
-                  label: Text(controller.isLoading.value ? 'جاري الحفظ...' : 'حفظ التعديلات', style: GoogleFonts.tajawal()),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
+              // Save Button
+              Obx(() =>
+                  ElevatedButton.icon(
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : () => controller.submitJob(),
+                    icon: controller.isLoading.value
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                        : const Icon(Icons.save),
+                    label: Text(
+                      controller.isLoading.value ? 'جاري الحفظ...' : 'حفظ التعديلات',
+                      style: GoogleFonts.tajawal(),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  )),
             ],
           ),
         ),
