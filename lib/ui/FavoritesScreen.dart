@@ -9,7 +9,7 @@ import 'package:quiz_project/utils/storage_keys.dart';
 
 import '../auth/UserModel.dart';
 import '../controllers/home_controller.dart';
-import '../core/models.dart'; // JobModel, ContactType, etc.
+import '../models.dart'; // JobModel, ContactType, etc.
 import 'job_details_screen.dart';
 
 // lib/screens/favorites_screen.dart

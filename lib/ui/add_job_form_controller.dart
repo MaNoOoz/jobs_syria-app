@@ -8,7 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../controllers/AuthController.dart';
 import '../controllers/home_controller.dart';
-import '../core/models.dart'; // Make sure JobModel and ContactOption/ContactType are here
+import '../models.dart'; // Make sure JobModel and ContactOption/ContactType are here
 import 'map_picker_screen.dart'; // Make sure MapPickerScreen is imported
 
 class AddJobFormController extends GetxController {

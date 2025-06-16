@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../core/models.dart';
+import '../models.dart';
 import 'add_job_form_controller.dart';
 
 class EditJobScreen extends StatelessWidget {

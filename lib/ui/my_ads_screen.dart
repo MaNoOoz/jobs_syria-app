@@ -7,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../controllers/AuthController.dart';
 import '../controllers/home_controller.dart';
-import '../core/models.dart'; // JobModel
+import '../models.dart'; // JobModel
 import 'add_job_screen.dart';
 import 'edit_job_screen.dart';
 import 'job_details_screen.dart'; // To view job details

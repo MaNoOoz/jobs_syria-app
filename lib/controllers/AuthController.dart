@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:quiz_project/utils/storage_keys.dart';
 
-import '../core/models.dart'; // Contains UserModel
+import '../models.dart'; // Contains UserModel
 
 class AuthController extends GetxController {
   final box = GetStorage();
