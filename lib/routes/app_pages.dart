@@ -19,7 +19,6 @@ abstract class AppPages {
     GetPage(
       name: Routes.LOGIN,
       page: () => LoginScreen(),
-      binding: AuthBinding(),
     ),
     GetPage(
       name: Routes.ADD_NEW,
@@ -29,7 +28,6 @@ abstract class AppPages {
     GetPage(
       name: Routes.REGISTER,
       page: () => RegisterScreen(),
-      binding: AuthBinding(),
     ),
     GetPage(
       name: Routes.MAIN,
@@ -67,12 +65,7 @@ abstract class Routes {
 }
 
 
-class AuthBinding implements Bindings {
-  @override
-  void dependencies() {
-    Get.lazyPut<AuthController>(() => AuthController());
-  }
-}
+
 
 class HomeBinding implements Bindings {
   @override
@@ -105,7 +98,6 @@ class InitialBindings implements Bindings {
   void dependencies() {
 
     ThemeBinding().dependencies();
-    AuthBinding().dependencies();
     HomeBinding().dependencies();
     AddNewJobBinding().dependencies();
     MapBinding().dependencies();

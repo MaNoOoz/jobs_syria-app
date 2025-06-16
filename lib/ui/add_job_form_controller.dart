@@ -6,14 +6,28 @@ import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
 
-import '../controllers/AuthController.dart';
+import '../models.dart';
+import '../routes/app_pages.dart';
+import '../services/auth_service.dart';
 import '../controllers/home_controller.dart';
-import '../models.dart'; // Make sure JobModel and ContactOption/ContactType are here
+import 'map_picker_screen.dart'; // Make sure MapPickerScreen is imported
+
+// lib/controllers/add_job_form_controller.dart
+
+import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:get/get.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:uuid/uuid.dart';
+
+import '../models.dart';
+import '../services/auth_service.dart';
+import '../controllers/home_controller.dart';
 import 'map_picker_screen.dart'; // Make sure MapPickerScreen is imported
 
 class AddJobFormController extends GetxController {
   final HomeController _jobController = Get.find<HomeController>();
-  final AuthController _authController = Get.find<AuthController>();
+  final AuthService _authService = Get.find<AuthService>();
 
   final JobModel? initialJob;
 
@@ -32,14 +46,13 @@ class AddJobFormController extends GetxController {
   final TextEditingController locationTextController = TextEditingController();
   final TextEditingController cityController = TextEditingController();
   final TextEditingController contactValueController = TextEditingController();
-  final TextEditingController minSalaryController = TextEditingController(); // Added for UI
-  final TextEditingController maxSalaryController = TextEditingController(); // Added for UI
+  // Removed minSalaryController and maxSalaryController
 
   // Reactive state variables
   final RxDouble latitude = 33.5138.obs; // Default to a central point in Syria (e.g., near Damascus)
   final RxDouble longitude = 36.2765.obs;
 
-  final RxList<ContactOption> contactOptions = <ContactOption>[].obs;
+  final RxList<ContactOption> contactOptions = <ContactOption>[].obs; // Corrected syntax here from `]}` to `[]`
   final Rx<ContactType?> chosenContactType = Rx<ContactType?>(null);
   final RxString selectedJobType = 'دوام كامل'.obs; // Default to full-time
   final RxBool isLoading = false.obs;
@@ -54,17 +67,16 @@ class AddJobFormController extends GetxController {
     'عن بعد',
     'مؤقت'
   ];
-  RxnString selectedCity = RxnString(); // Holds the selected city
 
   // Cities for the dropdown, based on your previous `home_view.dart`
   static const List<String> cities = ['دمشق', 'حلب', 'حمص', 'اللاذقية', 'طرطوس'];
-
 
   // Store the last valid non-remote location for easy revert
   double? _lastValidLat;
   double? _lastValidLng;
   String? _lastValidLocationText;
   String? _lastValidCity;
+  String? _lastValidJobType = 'دوام كامل'; // Store the last valid non-remote job type
 
   @override
   void onInit() {
@@ -82,14 +94,11 @@ class AddJobFormController extends GetxController {
     }
 
     // Listener for job type changes to affect location fields
-    // This will now be primarily driven by `selectedJobType` changing,
-    // which in turn is affected by `toggleRemote`.
     ever(selectedJobType, (_) {
       _handleJobTypeLocationLogic(selectedJobType.value);
     });
 
     // Explicitly handle initial state for `isRemote` based on `selectedJobType`
-    // This handles cases where `initialJob` might set `jobType` to 'عن بعد'.
     isRemote.value = (selectedJobType.value == 'عن بعد');
   }
 
@@ -97,14 +106,13 @@ class AddJobFormController extends GetxController {
   Future<void> _initializeDefaultLocation() async {
     latitude.value = 33.5138; // Damascus
     longitude.value = 36.2765;
-    locationTextController.text = '${latitude.value.toStringAsFixed(5)}, ${longitude.value.toStringAsFixed(5)}';
+    // locationTextController.text should be updated by reverse geocoding
     await _reverseGeocodeAndSetCity(LatLng(latitude.value, longitude.value));
     _lastValidLat = latitude.value;
     _lastValidLng = longitude.value;
     _lastValidLocationText = locationTextController.text;
     _lastValidCity = cityController.text;
   }
-
 
   // New method: Populates the form fields with data from an existing JobModel
   void _populateForm(JobModel job) {
@@ -128,13 +136,6 @@ class AddJobFormController extends GetxController {
     contactOptions.value = List<ContactOption>.from(job.contactOptions);
   }
 
-
-
-  // Add this method to handle city changes (if using a dropdown)
-  void onCityChanged(String? newCity) {
-    selectedCity.value = newCity;
-    cityController.text = newCity ?? '';
-  }
   @override
   void onClose() {
     titleController.dispose();
@@ -143,29 +144,23 @@ class AddJobFormController extends GetxController {
     locationTextController.dispose();
     cityController.dispose();
     contactValueController.dispose();
-    minSalaryController.dispose(); // Dispose new controllers
-    maxSalaryController.dispose(); // Dispose new controllers
+    // Removed minSalaryController.dispose();
+    // Removed maxSalaryController.dispose();
     super.onClose();
   }
 
   /// Handles the toggling of the 'isRemote' switch.
-  /// This method updates `selectedJobType` which then triggers the `ever` listener.
   void toggleRemote(bool value) {
     isRemote.value = value;
     if (value) {
       selectedJobType.value = 'عن بعد';
     } else {
-      // When switching off remote, default to full-time or last non-remote type
-      selectedJobType.value = _lastValidJobType ?? 'دوام كامل'; // Preserve last non-remote type if available
+      // When switching off remote, revert to last non-remote type or default to full-time
+      selectedJobType.value = _lastValidJobType ?? 'دوام كامل';
     }
   }
 
-  // Store the last valid non-remote job type
-  String? _lastValidJobType = 'دوام كامل';
-
-
   /// Logic to handle location fields based on job type (remote vs. physical).
-  /// This is called by the `ever` listener.
   Future<void> _handleJobTypeLocationLogic(String newType) async {
     if (newType == 'عن بعد') {
       // Store current physical location and job type before clearing for remote
@@ -173,7 +168,7 @@ class AddJobFormController extends GetxController {
       _lastValidLng = longitude.value;
       _lastValidLocationText = locationTextController.text;
       _lastValidCity = cityController.text;
-      _lastValidJobType = selectedJobType.value; // Store the previous non-remote type
+      _lastValidJobType = initialJob?.jobType ?? selectedJobType.value; // Capture previous job type
 
       // Clear and set to remote defaults
       cityController.text = 'عن بعد';
@@ -191,29 +186,25 @@ class AddJobFormController extends GetxController {
         cityController.text = _lastValidCity!;
       } else {
         // If no last valid, revert to initial default and re-geocode
-        await _initializeDefaultLocation(); // Re-initialize default location
+        await _initializeDefaultLocation();
       }
     }
   }
 
   /// Converts Coordinates to City Name using geocoding.
-  /// This is suitable for Flutter Web as `geocoding` package supports it.
   Future<void> _reverseGeocodeAndSetCity(LatLng latLng) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(
-        latLng.latitude, latLng.longitude,
-
-        // localeIdentifier: 'ar'
-
-      ); // Request Arabic names if available
+        latLng.latitude,
+        latLng.longitude,
+        // localeIdentifier: 'ar', // This parameter is not always supported consistently
+      );
 
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks.first;
-        // Prioritize administrative areas, then locality, then name
         String displayCity = place.administrativeArea ?? place.locality ?? place.name ?? 'غير معروفة';
         cityController.text = displayCity;
 
-        // More detailed location text for display
         locationTextController.text = [
           place.street,
           place.subLocality,
@@ -237,30 +228,23 @@ class AddJobFormController extends GetxController {
   }
 
   /// Handles location picking from the map.
-  /// Renamed from `pickLocationOnMap` to `pickLocation` to match UI.
   Future<void> pickLocation(BuildContext context) async {
-    // Pass current location to the map picker as initial location
     LatLng initialMapLocation = LatLng(latitude.value, longitude.value);
-    // If current coords are 0.0, 0.0 (e.g. from a remote job or initial unpicked state),
-    // start map at a sensible default (Damascus).
     if (latitude.value == 0.0 && longitude.value == 0.0) {
-      initialMapLocation = LatLng(33.5138, 36.2765); // Damascus default for map picker
+      initialMapLocation = const LatLng(33.5138, 36.2765); // Damascus default for map picker
     }
 
     final result = await Get.to<LatLng>(() => MapPickerScreen(initialLocation: initialMapLocation));
     if (result != null) {
       latitude.value = result.latitude;
       longitude.value = result.longitude;
-      await _reverseGeocodeAndSetCity(result); // Update text fields and geocode
+      await _reverseGeocodeAndSetCity(result);
 
-      // If job type was 'عن بعد', automatically change it to 'دوام كامل'
-      // when a physical location is picked.
       if (selectedJobType.value == 'عن بعد') {
         selectedJobType.value = 'دوام كامل';
-        isRemote.value = false; // Also update the switch
+        isRemote.value = false;
       }
 
-      // Update last valid location
       _lastValidLat = latitude.value;
       _lastValidLng = longitude.value;
       _lastValidLocationText = locationTextController.text;
@@ -269,41 +253,20 @@ class AddJobFormController extends GetxController {
     }
   }
 
-  /// Generic validation for required text fields using validator callback.
-  /// This now matches the signature `FormFieldValidator<String>`.
+  /// Generic validation for required text fields.
   String? validateRequired(String? value) {
-    if (value == null || value
-        .trim()
-        .isEmpty) {
+    if (value == null || value.trim().isEmpty) {
       return 'هذا الحقل مطلوب';
-    }
-    return null; // No error
-  }
-
-  /// Validation for numeric input fields (salary).
-  String? validateNumber(String? value) {
-    if (value == null || value
-        .trim()
-        .isEmpty) {
-      return 'هذا الحقل مطلوب';
-    }
-    if (double.tryParse(value) == null) {
-      return 'الرجاء إدخال رقم صحيح';
-    }
-    if (double.parse(value) < 0) {
-      return 'لا يمكن أن يكون الرقم سالبًا';
     }
     return null;
   }
 
+  // Removed validateNumber method
+
   /// Specific validation for hashtags.
   String? validateHashtags(String? value) {
     if (value != null && value.isNotEmpty) {
-      final tags = value
-          .split(',')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
+      final tags = value.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
       for (final tag in tags) {
         if (!tag.startsWith('#')) {
           return 'يجب أن تبدأ الهاشتاجات بعلامة #';
@@ -316,8 +279,7 @@ class AddJobFormController extends GetxController {
     return null;
   }
 
-  /// Validation for contact value based on type, for use in the dialog.
-  /// Returns a string error message if invalid, or null if valid.
+  /// Validation for contact value based on type.
   String? _validateContactValue(ContactType type, String value) {
     if (value.isEmpty) {
       return 'قيمة التواصل مطلوبة.';
@@ -326,8 +288,6 @@ class AddJobFormController extends GetxController {
     switch (type) {
       case ContactType.phone:
       case ContactType.whatsapp:
-      // WhatsApp numbers typically follow international phone number formats.
-      // Requires leading '+', followed by digits. Min 7, Max 15 digits after '+'.
         final phoneRegex = RegExp(r'^\+[0-9]{7,15}$');
         if (!phoneRegex.hasMatch(value)) {
           return 'رقم الهاتف/واتساب غير صحيح. يجب أن يبدأ بـ "+" متبوعًا بـ 7 إلى 15 رقمًا.';
@@ -353,9 +313,7 @@ class AddJobFormController extends GetxController {
         }
         break;
       case ContactType.facebook:
-      // Validate as URL or simple username
-        final urlRegex = RegExp(
-            r'^(https?:\/\/(?:www\.)?facebook\.com\/[a-zA-Z0-9._-]+|@[a-zA-Z0-9._-]+)$');
+        final urlRegex = RegExp(r'^(https?:\/\/(?:www\.)?facebook\.com\/[a-zA-Z0-9._-]+|@[a-zA-Z0-9._-]+)$');
         if (!urlRegex.hasMatch(value)) {
           return 'رابط فيسبوك غير صحيح أو اسم مستخدم غير صالح.';
         }
@@ -388,6 +346,7 @@ class AddJobFormController extends GetxController {
     }
     return null; // Valid
   }
+
   /// Opens a dialog to add a contact option.
   void openAddContactDialog(BuildContext context) {
     chosenContactType.value = null; // Reset for new dialog
@@ -526,9 +485,8 @@ class AddJobFormController extends GetxController {
       return;
     }
 
-
     isLoading.value = true;
-    final String? currentUserId = _authController.getCurrentUserId();
+    final String? currentUserId = _authService.currentUser.value?.uid;
 
     if (currentUserId == null) {
       isLoading.value = false;
@@ -547,9 +505,7 @@ class AddJobFormController extends GetxController {
           .where((e) => e.isNotEmpty && e.startsWith('#'))
           .toList();
 
-      // Parse salaries safely
-      final double? minSalary = double.tryParse(minSalaryController.text);
-      final double? maxSalary = double.tryParse(maxSalaryController.text);
+      // Removed parsing of salaries
 
       // Ensure that if it's a remote job, location data is consistently 'عن بعد' or 0.0
       String finalLocationText = locationTextController.text;
@@ -557,13 +513,12 @@ class AddJobFormController extends GetxController {
       double finalLatitude = latitude.value;
       double finalLongitude = longitude.value;
 
-      if (isRemote.value) { // Use isRemote for this check
+      if (isRemote.value) {
         finalLocationText = 'عن بعد';
         finalCity = 'عن بعد';
         finalLatitude = 0.0;
         finalLongitude = 0.0;
       }
-
 
       if (initialJob == null) {
         // ADD NEW JOB
@@ -574,7 +529,6 @@ class AddJobFormController extends GetxController {
           description: descController.text.trim(),
           city: finalCity,
           jobType: selectedJobType.value,
-          // This is now correctly handled by isRemote
           location: finalLocationText,
           latitude: finalLatitude,
           longitude: finalLongitude,
@@ -588,12 +542,12 @@ class AddJobFormController extends GetxController {
         debugPrint('Attempting to add new job: ${jobToSubmit.toMap()}');
         await _jobController.addJob(jobToSubmit);
 
-        final UserModel? user = _authController.currentUser.value;
+        final UserModel? user = _authService.currentUser.value;
         if (user != null) {
           final updatedMyJobs = List<String>.from(user.myJobs);
           updatedMyJobs.add(newJobId);
           final updatedUser = user.copyWith(myJobs: updatedMyJobs);
-          await _authController.updateCurrentUser(updatedUser);
+          await _authService.updateUserInFirestore(updatedUser.uid!, updatedUser.toMap());
         }
 
         Get.snackbar('نجاح', 'تمت إضافة الوظيفة بنجاح!',
@@ -608,12 +562,12 @@ class AddJobFormController extends GetxController {
           description: descController.text.trim(),
           city: finalCity,
           jobType: selectedJobType.value,
-          // This is now correctly handled by isRemote
           location: finalLocationText,
           latitude: finalLatitude,
           longitude: finalLongitude,
           hashtags: parsedHashtags,
           contactOptions: contactOptions.toList(),
+          // ownerId and createdAt should not change during update
         );
         debugPrint('Attempting to update job: ${jobToSubmit.toMap()}');
         await _jobController.updateJob(jobToSubmit);
@@ -632,6 +586,7 @@ class AddJobFormController extends GetxController {
           colorText: Colors.white);
     } finally {
       isLoading.value = false;
+      Get.offAndToNamed(Routes.MAIN);
     }
   }
 }

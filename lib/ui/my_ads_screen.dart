@@ -1,13 +1,14 @@
 // lib/screens/my_ads_screen.dart
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-
-import '../controllers/AuthController.dart';
+import '../models.dart';
+import '../services/auth_service.dart'; // Changed from AuthController
 import '../controllers/home_controller.dart';
-import '../models.dart'; // JobModel
 import 'add_job_screen.dart';
 import 'edit_job_screen.dart';
 import 'job_details_screen.dart'; // To view job details
@@ -20,31 +21,37 @@ class MyAdsScreen extends StatefulWidget {
 }
 
 class _MyAdsScreenState extends State<MyAdsScreen> {
-  final AuthController authController = Get.find<AuthController>();
+  // Changed from AuthController to AuthService
+  final AuthService authService = Get.find<AuthService>();
   final HomeController jobController = Get.find<HomeController>();
+
+  // Subscription for the auth service's current user stream
+  late final StreamSubscription<UserModel?> _userSubscription;
+
 
   @override
   void initState() {
     super.initState();
     // Fetch user's posted jobs when the screen initializes
-    // This will trigger the stream in JobController to start listening
     _fetchUserJobs();
 
     // Listen for changes in the current user to re-fetch jobs
     // This is important if user logs in/out or their role changes
-    ever(authController.currentUser, (_) {
+    _userSubscription = authService.currentUser.listen((_) {
       _fetchUserJobs();
     });
   }
 
+  @override
+  void dispose() {
+    _userSubscription.cancel(); // Cancel the subscription
+    super.dispose();
+  }
+
   Future<void> _fetchUserJobs() async {
-    final currentUserId = authController.currentUser.value?.id;
-    if (currentUserId != null) {
-      jobController.fetchOwnerJobs(currentUserId);
-    } else {
-      // Clear the list if no user is logged in
-      jobController.ownerJobs.clear();
-    }
+    // No need to pass currentUserId, HomeController.fetchMyJobs gets it directly
+    // from AuthService now.
+    jobController.fetchMyJobs();
   }
 
   @override
@@ -54,22 +61,34 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('إعلاناتي', style: GoogleFonts.tajawal(fontWeight: FontWeight.bold)),
-        backgroundColor: cs.primary,
-        foregroundColor: cs.onPrimary,
+        backgroundColor: cs.primaryContainer, // Using primaryContainer for consistency
+        foregroundColor: cs.onPrimaryContainer, // Using onPrimaryContainer for consistency
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.add_business, color: cs.onPrimary),
+            icon: Icon(Icons.add_business, color: cs.onPrimaryContainer),
             tooltip: 'إضافة إعلان جديد',
             onPressed: () {
-
+              // Ensure user is an employer before allowing to add job
+              if (authService.currentUser.value?.role == AppRoles.employer) {
+                Get.to(() => const AddJobScreen());
+              } else {
+                Get.snackbar(
+                  'خطأ',
+                  'ليس لديك صلاحية لإضافة إعلانات.',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+              }
             },
           ),
         ],
       ),
       body: Obx(() {
-        // First, check if there's a logged-in user and if they have the 'job_owner' role
-        if (authController.currentUser.value == null || authController.currentUser.value!.role != AppRoles.employer) {
+        // Check if there's a logged-in user and if they have the 'employer' role
+        final currentUser = authService.currentUser.value;
+        if (currentUser == null || currentUser.role != AppRoles.employer) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
@@ -106,12 +125,10 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
                     icon: const Icon(Icons.add),
                     label: Text('انشر إعلانك الأول', style: GoogleFonts.tajawal(fontSize: 16)),
                     style: ElevatedButton.styleFrom(
-
                         backgroundColor: cs.primary,
                         foregroundColor: cs.onPrimary,
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
                   ),
-
                 ],
               ),
             ),

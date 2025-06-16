@@ -1,66 +1,258 @@
-// lib/auth/login_screen.dart
-
+// lib/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:quiz_project/controllers/AuthController.dart';
-
-
-
-// import '../ui/storage_keys.dart'; // No longer directly needed
-// import 'UserModel.dart'; // No longer directly needed, AuthController handles models
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:quiz_project/services/auth_service.dart'; // Keep this
+import 'package:quiz_project/utils/Constants.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:quiz_project/utils/storage_keys.dart'; // Make sure this is imported
 
 class LoginScreen extends StatelessWidget {
-  final usernameController = TextEditingController();
+  final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final AuthService _authService = Get.find<AuthService>(); // Get AuthService
 
-  // Inject the AuthController
-  final AuthController _authController = Get.find<AuthController>();
+  final RxBool rememberMe = false.obs;
 
-  LoginScreen({super.key});
+  LoginScreen({super.key}) {
+    _loadRememberMePreferences();
+  }
+
+  void _loadRememberMePreferences() {
+    final box = GetStorage();
+    final savedEmail = box.read(StorageKeys.rememberedEmail);
+    final savedPassword = box.read(StorageKeys.rememberedPassword);
+    final savedRememberMe = box.read(StorageKeys.rememberMe) ?? false;
+
+    if (savedRememberMe && savedEmail != null && savedPassword != null) {
+      emailController.text = savedEmail;
+      passwordController.text = savedPassword;
+      rememberMe.value = true;
+    } else {
+      rememberMe.value = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('تسجيل الدخول')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      appBar: AppBar(
+        title: const Text('تسجيل الدخول'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
           children: [
+            Image.asset(
+              APP_LOGO,
+              height: 150,
+            )
+                .animate()
+                .fadeIn(duration: 500.ms)
+                .scale(),
+
+            const SizedBox(height: 30),
+
             TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(labelText: 'اسم المستخدم', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 20),
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              textDirection: TextDirection.rtl,
+              decoration: InputDecoration(
+                labelText: 'البريد الإلكتروني',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                prefixIcon: const Icon(Icons.email),
+              ),
+            ).animate().fadeIn(delay: 200.ms),
+
+            const SizedBox(height: 15),
+
             TextField(
               controller: passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'كلمة المرور', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity, // Make button full width
-              child: ElevatedButton(
-                onPressed: () {
-                  final inputUsername = usernameController.text.trim();
-                  final inputPassword = passwordController.text.trim();
-                  _authController.login(inputUsername, inputPassword); // Call AuthController's login method
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  textStyle: const TextStyle(fontSize: 18),
+              textDirection: TextDirection.rtl,
+              decoration: InputDecoration(
+                labelText: 'كلمة المرور',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text('دخول'),
+                prefixIcon: const Icon(Icons.lock),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () => Get.toNamed('/register'),
-              child: const Text('مستخدم جديد؟ سجل الآن'),
+            ).animate().fadeIn(delay: 300.ms),
+
+            Obx(
+                  () => CheckboxListTile(
+                title: const Text('تذكرني'),
+                controlAffinity: ListTileControlAffinity.leading,
+                value: rememberMe.value,
+                onChanged: (bool? newValue) {
+                  rememberMe.value = newValue!;
+                },
+              ),
+            ).animate().fadeIn(delay: 325.ms),
+
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: _showForgotPasswordDialog,
+                child: const Text(
+                  'نسيت كلمة المرور؟',
+                  style: TextStyle(color: Colors.blue),
+                ),
+              ),
+            ).animate().fadeIn(delay: 350.ms),
+
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _loginWithEmail, // This calls AuthService
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'دخول',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
             )
+                .animate()
+                .fadeIn(delay: 400.ms)
+                .then()
+                .shake(),
+
+            const SizedBox(height: 15),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _loginAnonymously, // This calls AuthService
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'تصفح كضيف',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ).animate().fadeIn(delay: 500.ms),
+
+            const SizedBox(height: 20),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () => Get.toNamed('/register'),
+                  child: const Text(
+                    'ليس لديك حساب؟ سجل الآن',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+            ).animate().fadeIn(delay: 600.ms),
           ],
         ),
       ),
     );
+  }
+
+  void _loginWithEmail() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      Get.snackbar(
+        'خطأ',
+        'الرجاء إدخال البريد الإلكتروني وكلمة المرور',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      await _authService.loginWithEmail(email, password, rememberMe.value);
+      // AuthService will handle navigation on success
+    } catch (e) {
+      // AuthService already shows a snackbar for errors, so this might be redundant
+      // unless you need more specific UI handling here.
+      debugPrint('Login error in LoginScreen: $e');
+    }
+  }
+
+  void _loginAnonymously() async {
+    try {
+      await _authService.loginAnonymously();
+      // AuthService will handle navigation on success
+    } catch (e) {
+      debugPrint('Anonymous login error in LoginScreen: $e');
+    }
+  }
+
+  void _showForgotPasswordDialog() {
+    final emailController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('استعادة كلمة المرور'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('أدخل بريدك الإلكتروني لإرسال رابط الاستعادة'),
+            const SizedBox(height: 15),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'البريد الإلكتروني',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => _sendPasswordResetEmail(emailController.text.trim()),
+            child: const Text('إرسال'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendPasswordResetEmail(String email) async {
+    if (email.isEmpty || !GetUtils.isEmail(email)) {
+      Get.snackbar(
+        'خطأ',
+        'الرجاء إدخال بريد إلكتروني صحيح',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      await _authService.sendPasswordResetEmail(email);
+      Get.back(); // Close dialog
+      // AuthService already shows snackbar for success/failure
+    } catch (e) {
+      debugPrint('Password reset error in LoginScreen: $e');
+    }
   }
 }
