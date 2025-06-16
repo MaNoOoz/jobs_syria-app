@@ -17,7 +17,11 @@ class AddJobFormController extends GetxController {
 
   final JobModel? initialJob;
 
-  AddJobFormController({this.initialJob});
+  AddJobFormController({this.initialJob}) {
+    if (initialJob != null) {
+      _populateForm(initialJob!);
+    }
+  }
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
