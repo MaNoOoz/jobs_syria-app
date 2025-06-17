@@ -2,6 +2,7 @@
 import 'package:get/get.dart';
 import 'package:quiz_project/auth/login_screen.dart';
 import 'package:quiz_project/auth/register_screen.dart';
+import 'package:quiz_project/ui/FavoritesScreen.dart';
 import 'package:quiz_project/ui/add_job_form_controller.dart';
 import 'package:quiz_project/ui/home_view.dart';
 import 'package:quiz_project/ui/main_screen.dart';
@@ -19,6 +20,9 @@ abstract class AppPages {
     GetPage(
       name: Routes.LOGIN,
       page: () => LoginScreen(),
+    ), GetPage(
+      name: Routes.FAVORITES,
+      page: () => FavoritesScreen(),
     ),
     GetPage(
       name: Routes.HOME,
@@ -67,6 +71,7 @@ abstract class Routes {
   static const MY_ADS = '/my_ads';
   static const ADD_NEW = '/create_new_job';
   static const HOME = '/home';
+  static const FAVORITES = '/FAVORITES';
 }
 
 

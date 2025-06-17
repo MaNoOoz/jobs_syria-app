@@ -1,28 +1,20 @@
 // lib/controllers/add_job_form_controller.dart
 
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 
+import '../controllers/home_controller.dart';
 import '../models.dart';
 import '../routes/app_pages.dart';
 import '../services/auth_service.dart';
-import '../controllers/home_controller.dart';
-import 'map_picker_screen.dart'; // Make sure MapPickerScreen is imported
-
-// lib/controllers/add_job_form_controller.dart
-
-import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:get/get.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:uuid/uuid.dart';
-
-import '../models.dart';
-import '../services/auth_service.dart';
-import '../controllers/home_controller.dart';
 import 'map_picker_screen.dart'; // Make sure MapPickerScreen is imported
 
 class AddJobFormController extends GetxController {
@@ -192,13 +184,56 @@ class AddJobFormController extends GetxController {
   }
 
   /// Converts Coordinates to City Name using geocoding.
+
+
+
   Future<void> _reverseGeocodeAndSetCity(LatLng latLng) async {
+    Logger().e('Reverse geocode attempt initiated: ${cityController.text}');
+
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        latLng.latitude,
-        latLng.longitude,
-        // localeIdentifier: 'ar', // This parameter is not always supported consistently
-      );
+      // Check if running on web to apply specific logic
+      if (kIsWeb) {
+        Logger().e('Running on Web - Attempting geocoding via Nominatim API');
+
+        // Use Nominatim (OpenStreetMap) API for Web with Arabic results
+        final url = Uri.parse(
+            'https://nominatim.openstreetmap.org/reverse?lat=${latLng.latitude}&lon=${latLng.longitude}&format=json&addressdetails=1');
+
+        final response = await http.get(url, headers: {
+          'Accept-Language': 'ar', // Request results in Arabic
+        });
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['address'] != null) {
+            String displayCity = data['address']['city'] ??
+                data['address']['town'] ??
+                data['address']['village'] ??
+                'غير معروفة';
+            cityController.text = displayCity;
+
+            // Full address to be shown
+            locationTextController.text = data['display_name'] ?? 'خطأ في تحديد الموقع';
+
+            if (locationTextController.text.isEmpty) {
+              locationTextController.text = 'خطأ في تحديد الموقع';
+              Logger().e('Reverse geocoding failed: Empty location text');
+            }
+          } else {
+            cityController.text = 'غير معروفة';
+            locationTextController.text = 'الموقع غير متاح';
+            Logger().e('Reverse geocoding failed: No address found');
+          }
+        } else {
+          cityController.text = 'خطأ في تحديد المدينة';
+          locationTextController.text = 'خطأ في تحديد الموقع';
+          Logger().e('Geocoding request failed: ${response.statusCode}');
+        }
+        return;
+      }
+
+      // For non-web platforms (i.e., mobile), proceed with standard geocoding
+      List<Placemark> placemarks = await placemarkFromCoordinates(latLng.latitude, latLng.longitude);
 
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks.first;
@@ -215,10 +250,12 @@ class AddJobFormController extends GetxController {
 
         if (locationTextController.text.isEmpty) {
           locationTextController.text = 'خطأ في تحديد الموقع';
+          Logger().e('Reverse geocoding failed: Empty location text');
         }
       } else {
         cityController.text = 'غير معروفة';
         locationTextController.text = 'الموقع غير متاح';
+        Logger().e('Reverse geocoding failed: No placemarks found');
       }
     } catch (e) {
       debugPrint('Reverse geocoding failed: $e');
@@ -358,35 +395,65 @@ class AddJobFormController extends GetxController {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Obx(() =>
-                DropdownButtonFormField<ContactType>(
-                  value: chosenContactType.value,
-                  hint: const Text('نوع التواصل'),
-                  items: ContactType.values.map((type) {
-                    return DropdownMenuItem(
-                      value: type,
-                      child: Text(type.displayName),
-                    );
-                  }).toList(),
-                  onChanged: (type) {
-                    chosenContactType.value = type;
-                  },
-                  validator: (type) {
-                    if (type == null) {
-                      return 'الرجاء اختيار نوع التواصل';
-                    }
-                    return null;
-                  },
-                )),
+            Obx(() => DropdownButtonFormField<ContactType>(
+              value: chosenContactType.value,
+              hint: const Text('نوع التواصل'),
+              items: ContactType.values.map((type) {
+                return DropdownMenuItem(
+                  value: type,
+                  child: Text(type.displayName),
+                );
+              }).toList(),
+              onChanged: (type) {
+                chosenContactType.value = type;
+              },
+              validator: (type) {
+                if (type == null) {
+                  return 'الرجاء اختيار نوع التواصل';
+                }
+                return null;
+              },
+            )),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: contactValueController,
-              decoration: const InputDecoration(
-                labelText: 'القيمة (مثال: +9639991234567، username@example.com)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.text,
-            ),
+            Obx(() {
+              // Define hint text based on the selected contact type
+              String hintText = '';
+              switch (chosenContactType.value) {
+                case ContactType.whatsapp:
+                  hintText = 'مثال: +9639991234567';
+                  break;
+                case ContactType.telegram:
+                  hintText = 'مثال: @username';
+                  break;
+                case ContactType.email:
+                  hintText = 'مثال: example@example.com';
+                  break;
+                case ContactType.website:
+                  hintText = 'مثال: www.example.com';
+                  break;
+                case ContactType.phone:
+                  hintText = 'مثال: +9639991234567';
+                  break;
+                case ContactType.facebook:
+                  hintText = 'مثال: facebook.com/username';
+                  break;
+                case ContactType.other:
+                  hintText = 'أدخل التفاصيل';
+                  break;
+                default:
+                  hintText = 'أدخل القيمة';
+              }
+
+              return TextFormField(
+                controller: contactValueController,
+                decoration: InputDecoration(
+                  labelText: 'القيمة',
+                  hintText: hintText, // Update hint text based on selected contact type
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.text,
+              );
+            }),
           ],
         ),
         actions: [

@@ -6,15 +6,34 @@ import 'package:quiz_project/services/auth_service.dart'; // Use AuthService
 
 import '../utils/Constants.dart';
 
-class RegisterScreen extends StatelessWidget {
-  final emailController = TextEditingController(); // New field for email
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final emailController = TextEditingController();
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
-  final AuthService _authService = Get.find<AuthService>(); // Get AuthService
+  final AuthService _authService = Get.find<AuthService>();
 
-  RegisterScreen({super.key}); // Add constructor for StatelessWidget
+  // State variables to toggle password visibility
+  bool _isPasswordObscured = true;
+  bool _isConfirmPasswordObscured = true;
+
+  @override
+  void dispose() {
+    // Dispose controllers to free up resources
+    emailController.dispose();
+    usernameController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,14 +49,11 @@ class RegisterScreen extends StatelessWidget {
             Image.asset(
               APP_LOGO,
               height: 120,
-            )
-                .animate()
-                .fadeIn(duration: 500.ms)
-                .scale(),
+            ).animate().fadeIn(duration: 500.ms).scale(),
 
             const SizedBox(height: 30),
 
-            // Email Field (New)
+            // Email Field
             TextField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
@@ -49,7 +65,7 @@ class RegisterScreen extends StatelessWidget {
                 ),
                 prefixIcon: const Icon(Icons.email),
               ),
-            ).animate().fadeIn(delay: 150.ms), // Adjust delay
+            ).animate().fadeIn(delay: 150.ms),
 
             const SizedBox(height: 15),
 
@@ -68,10 +84,10 @@ class RegisterScreen extends StatelessWidget {
 
             const SizedBox(height: 15),
 
-            // Password Field
+            // --- MODIFIED PASSWORD FIELD ---
             TextField(
               controller: passwordController,
-              obscureText: true,
+              obscureText: _isPasswordObscured,
               textDirection: TextDirection.rtl,
               decoration: InputDecoration(
                 labelText: 'كلمة المرور',
@@ -79,15 +95,26 @@ class RegisterScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordObscured ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordObscured = !_isPasswordObscured;
+                    });
+                  },
+                ),
               ),
             ).animate().fadeIn(delay: 300.ms),
+            // --- END OF MODIFICATION ---
 
             const SizedBox(height: 15),
 
-            // Confirm Password Field
+            // --- MODIFIED CONFIRM PASSWORD FIELD ---
             TextField(
               controller: confirmPasswordController,
-              obscureText: true,
+              obscureText: _isConfirmPasswordObscured,
               textDirection: TextDirection.rtl,
               decoration: InputDecoration(
                 labelText: 'تأكيد كلمة المرور',
@@ -95,8 +122,19 @@ class RegisterScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isConfirmPasswordObscured ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isConfirmPasswordObscured = !_isConfirmPasswordObscured;
+                    });
+                  },
+                ),
               ),
             ).animate().fadeIn(delay: 400.ms),
+            // --- END OF MODIFICATION ---
 
             const SizedBox(height: 30),
 
@@ -117,11 +155,7 @@ class RegisterScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
-            )
-                .animate()
-                .fadeIn(delay: 500.ms)
-                .then()
-                .shake(),
+            ).animate().fadeIn(delay: 500.ms).then().shake(),
 
             const SizedBox(height: 15),
 
@@ -151,13 +185,13 @@ class RegisterScreen extends StatelessWidget {
   }
 
   void _registerUser() async {
-    final email = emailController.text.trim(); // New
+    final email = emailController.text.trim();
     final username = usernameController.text.trim();
     final password = passwordController.text.trim();
     final confirmPassword = confirmPasswordController.text.trim();
 
     // Validation
-    if (email.isEmpty || username.isEmpty || password.isEmpty || confirmPassword.isEmpty) { // Added email check
+    if (email.isEmpty || username.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       Get.snackbar(
         'خطأ',
         'الرجاء ملء جميع الحقول',
@@ -168,7 +202,7 @@ class RegisterScreen extends StatelessWidget {
       return;
     }
 
-    if (!GetUtils.isEmail(email)) { // Validate email format
+    if (!GetUtils.isEmail(email)) {
       Get.snackbar(
         'خطأ',
         'الرجاء إدخال بريد إلكتروني صحيح',

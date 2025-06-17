@@ -5,17 +5,38 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quiz_project/services/auth_service.dart'; // Keep this
 import 'package:quiz_project/utils/Constants.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:quiz_project/utils/storage_keys.dart'; // Make sure this is imported
+import 'package:quiz_project/utils/storage_keys.dart';
 
-class LoginScreen extends StatelessWidget {
+import '../routes/app_pages.dart'; // Make sure this is imported
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final AuthService _authService = Get.find<AuthService>(); // Get AuthService
 
   final RxBool rememberMe = false.obs;
+  // State variable to toggle password visibility
+  bool _isPasswordObscured = true;
 
-  LoginScreen({super.key}) {
+  @override
+  void initState() {
+    super.initState();
     _loadRememberMePreferences();
+  }
+
+  @override
+  void dispose() {
+    // Dispose controllers to free up resources
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
   void _loadRememberMePreferences() {
@@ -69,9 +90,11 @@ class LoginScreen extends StatelessWidget {
 
             const SizedBox(height: 15),
 
+            // --- MODIFIED PASSWORD TEXTFIELD ---
             TextField(
               controller: passwordController,
-              obscureText: true,
+              // Use the state variable to control obscurity
+              obscureText: _isPasswordObscured,
               textDirection: TextDirection.rtl,
               decoration: InputDecoration(
                 labelText: 'كلمة المرور',
@@ -79,8 +102,22 @@ class LoginScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 prefixIcon: const Icon(Icons.lock),
+                // Add the visibility toggle icon button
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    // Change icon based on the state
+                    _isPasswordObscured ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    // Update the state to toggle visibility
+                    setState(() {
+                      _isPasswordObscured = !_isPasswordObscured;
+                    });
+                  },
+                ),
               ),
             ).animate().fadeIn(delay: 300.ms),
+            // --- END OF MODIFICATION ---
 
             Obx(
                   () => CheckboxListTile(
@@ -112,13 +149,15 @@ class LoginScreen extends StatelessWidget {
                 onPressed: _loginWithEmail, // This calls AuthService
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 15),
+                  backgroundColor: Theme.of(context).primaryColor,
+
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: const Text(
                   'دخول',
-                  style: TextStyle(fontSize: 18),
+                  style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
             )
@@ -152,7 +191,7 @@ class LoginScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TextButton(
-                  onPressed: () => Get.toNamed('/register'),
+                  onPressed: () => Get.toNamed(Routes.REGISTER),
                   child: const Text(
                     'ليس لديك حساب؟ سجل الآن',
                     style: TextStyle(fontSize: 16),
@@ -227,7 +266,11 @@ class LoginScreen extends StatelessWidget {
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
-            onPressed: () => _sendPasswordResetEmail(emailController.text.trim()),
+            onPressed: () {
+               _sendPasswordResetEmail(emailController.text.trim());
+
+
+            },
             child: const Text('إرسال'),
           ),
         ],
@@ -250,7 +293,14 @@ class LoginScreen extends StatelessWidget {
     try {
       await _authService.sendPasswordResetEmail(email);
       Get.back(); // Close dialog
-      // AuthService already shows snackbar for success/failure
+      Get.snackbar(
+        'تمام',
+        'تم إرسال الطلب',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green, // Changed to green for success
+        colorText: Colors.white,
+      );
+
     } catch (e) {
       debugPrint('Password reset error in LoginScreen: $e');
     }

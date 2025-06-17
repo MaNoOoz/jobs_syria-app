@@ -22,7 +22,6 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
   late double _localMaxDistanceKm;
   late JobSortOrder _localSortOrder;
 
-  // <--- CHANGED: To store the single selected hashtag for the UI
 
   static const List<String> _cities = ['الكل', 'دمشق', 'حلب', 'حمص', 'اللاذقية', 'طرطوس'];
   static const List<String> _jobTypes = ['الكل', 'دوام كامل', 'دوام جزئي', 'عن بعد', 'مؤقت'];
