@@ -155,7 +155,7 @@ class AuthService extends GetxController {
         'uid': user.uid,
         'email': isAnonymous ? null : email, // Use passed email for clarity
         'username': username ?? (isAnonymous ? 'GuestUser-${user.uid.substring(0, 5)}' : user.email?.split('@')[0]), // Default username
-        'role': role ?? 'user',
+        'role': role ?? 'employer',
         'isAnonymous': isAnonymous,
         'createdAt': FieldValue.serverTimestamp(),
         'favorites': [],

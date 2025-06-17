@@ -96,14 +96,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'وظائفي المفضلة',
-          style: GoogleFonts.tajawal(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: cs.primaryContainer,
-      ),
+      // appBar: AppBar(
+      //   title: Text(
+      //     'وظائفي المفضلة',
+      //     style: GoogleFonts.tajawal(fontWeight: FontWeight.bold),
+      //   ),
+      //   centerTitle: true,
+      //   backgroundColor: cs.primaryContainer,
+      // ),
       body: Obx(() {
         if (_authService.currentUser.value == null) {
           return Center(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
+import '../controllers/home_controller.dart';
 import '../models.dart';
 import '../routes/app_pages.dart';
 import '../ui/home_view.dart';
@@ -15,6 +16,7 @@ import '../services/auth_service.dart'; // Changed from AuthController
 import '../utils/theme_service.dart';
 
 import 'FavoritesScreen.dart';
+import 'map_controller.dart';
 import 'settings_screen.dart'; // Assuming settings_screen is in the same directory as MainScreen
 
 class MainScreen extends StatefulWidget {

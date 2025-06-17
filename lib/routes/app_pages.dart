@@ -3,12 +3,12 @@ import 'package:get/get.dart';
 import 'package:quiz_project/auth/login_screen.dart';
 import 'package:quiz_project/auth/register_screen.dart';
 import 'package:quiz_project/ui/add_job_form_controller.dart';
+import 'package:quiz_project/ui/home_view.dart';
 import 'package:quiz_project/ui/main_screen.dart';
 import 'package:quiz_project/ui/map_screen.dart';
 import 'package:quiz_project/ui/my_ads_screen.dart';
 import 'package:quiz_project/ui/profile_screen.dart';
 
-import '../controllers/AuthController.dart';
 import '../controllers/home_controller.dart';
 import '../ui/add_job_screen.dart';
 import '../ui/map_controller.dart';
@@ -19,6 +19,10 @@ abstract class AppPages {
     GetPage(
       name: Routes.LOGIN,
       page: () => LoginScreen(),
+    ),
+    GetPage(
+      name: Routes.HOME,
+      page: () => HomePage(),
     ),
     GetPage(
       name: Routes.ADD_NEW,
@@ -57,11 +61,12 @@ abstract class AppPages {
 abstract class Routes {
   static const LOGIN = '/login';
   static const REGISTER = '/register';
-  static const MAIN = '/ui';
+  static const MAIN = '/main';
   static const PROFILE = '/profile';
   static const MAP = '/map';
   static const MY_ADS = '/my_ads';
   static const ADD_NEW = '/create_new_job';
+  static const HOME = '/home';
 }
 
 
