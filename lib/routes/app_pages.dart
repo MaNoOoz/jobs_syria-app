@@ -2,9 +2,9 @@
 import 'package:get/get.dart';
 import 'package:quiz_project/auth/login_screen.dart';
 import 'package:quiz_project/auth/register_screen.dart';
-import 'package:quiz_project/ui/favorites_screen.dart';
+import 'package:quiz_project/ui/FavoritesScreen.dart';
 import 'package:quiz_project/controllers/add_job_form_controller.dart';
-import 'package:quiz_project/ui/home_screen.dart';
+import 'package:quiz_project/ui/home_view.dart';
 import 'package:quiz_project/ui/main_screen.dart';
 import 'package:quiz_project/ui/map_screen.dart';
 import 'package:quiz_project/ui/my_ads_screen.dart';
@@ -12,7 +12,7 @@ import 'package:quiz_project/ui/profile_screen.dart';
 
 import '../controllers/home_controller.dart';
 import '../ui/add_job_screen.dart';
-import '../controllers/map_controller.dart';
+import '../ui/map_controller.dart';
 import '../utils/theme_service.dart';
 
 abstract class AppPages {
