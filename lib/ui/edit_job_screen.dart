@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models.dart';
-import 'add_job_form_controller.dart';
+import '../controllers/add_job_form_controller.dart';
 
 class EditJobScreen extends StatelessWidget {
   final JobModel? job;

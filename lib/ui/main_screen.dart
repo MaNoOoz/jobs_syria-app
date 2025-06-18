@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
 import '../models.dart';
 import '../routes/app_pages.dart';
-import '../ui/home_view.dart';
+import '../ui/home_screen.dart';
 import '../ui/map_screen.dart';
 import '../ui/profile_screen.dart'; // Ensure this import is correct
 
@@ -15,8 +15,8 @@ import '../services/auth_service.dart'; // Changed from AuthController
 
 import '../utils/theme_service.dart';
 
-import 'FavoritesScreen.dart';
-import 'map_controller.dart';
+import 'favorites_screen.dart';
+import '../controllers/map_controller.dart';
 import 'settings_screen.dart'; // Assuming settings_screen is in the same directory as MainScreen
 
 class MainScreen extends StatefulWidget {

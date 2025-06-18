@@ -1,9 +1,10 @@
 // lib/features/home/presentation/widgets/job_filter_sort_bottom_sheet.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../controllers/home_controller.dart';
+import '../../../../controllers/home_controller.dart';
 
 class JobFilterSortBottomSheet extends StatefulWidget {
   final VoidCallback? onClearSearch;
@@ -19,11 +20,9 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
 
   late String? _localSelectedCity;
   late String? _localSelectedJobType;
-  late double _localMaxDistanceKm;
+  late double _localMaxDistanceKm; // Local state for the slider
   late JobSortOrder _localSortOrder;
 
-
-  static const List<String> _cities = ['الكل', 'دمشق', 'حلب', 'حمص', 'اللاذقية', 'طرطوس'];
   static const List<String> _jobTypes = ['الكل', 'دوام كامل', 'دوام جزئي', 'عن بعد', 'مؤقت'];
 
   @override
@@ -31,15 +30,14 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
     super.initState();
     _localSelectedCity = _jobController.currentCity.isEmpty ? null : _jobController.currentCity;
     _localSelectedJobType = _jobController.currentJobType.isEmpty ? null : _jobController.currentJobType;
-    _localMaxDistanceKm = _jobController.maxDistanceKm.value;
+    _localMaxDistanceKm = _jobController.maxDistanceKm.value; // Initialize from controller
     _localSortOrder = _jobController.currentSortOrder.value;
 
-    // <--- CHANGED: Initialize local selected hashtag from controller's current filter
+    _jobController.loadJobCities();
   }
 
   @override
   void dispose() {
-    // No specific controllers to dispose for chips here
     super.dispose();
   }
 
@@ -61,19 +59,26 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
           // --- City Dropdown ---
           Text('المدينة', style: GoogleFonts.tajawal(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurface)),
           const SizedBox(height: 8),
-          DropdownButtonFormField<String?>(
-            decoration: InputDecoration(
-              hintText: 'اختر المدينة',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          Obx(
+                () => DropdownButtonFormField<String?>(
+              decoration: InputDecoration(
+                hintText: 'اختر المدينة',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              value: _jobController.availableJobCities.contains(_localSelectedCity)
+                  ? _localSelectedCity
+                  : (_jobController.currentCity.isEmpty ? null : _jobController.currentCity),
+              items: _jobController.availableJobCities.map((city) => DropdownMenuItem<String?>(
+                value: city == 'الكل' ? null : city,
+                child: Text(city),
+              )).toList(),
+              onChanged: (v) {
+                setState(() {
+                  _localSelectedCity = v;
+                });
+              },
             ),
-            value: _localSelectedCity,
-            items: _cities.map((city) => DropdownMenuItem<String?>(value: city == 'الكل' ? null : city, child: Text(city))).toList(),
-            onChanged: (v) {
-              setState(() {
-                _localSelectedCity = v;
-              });
-            },
           ),
           const SizedBox(height: 16),
 
@@ -96,44 +101,59 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
           ),
           const SizedBox(height: 16),
 
-          const SizedBox(height: 8),
-
-          const SizedBox(height: 16),
-
           // --- Distance Slider ---
-          Text('المسافة القصوى: ${_localMaxDistanceKm.toStringAsFixed(0)} كم', style: GoogleFonts.tajawal(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurface)),
-          Slider(
-            min: 1,
-            max: 50,
-            divisions: 49,
-            value: _localMaxDistanceKm,
-            label: '${_localMaxDistanceKm.toStringAsFixed(0)} كم',
-            onChanged: (v) {
-              setState(() {
-                _localMaxDistanceKm = v;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
+          Obx(() {
+            // This Obx reacts to changes in _jobController.userLat and _jobController.userLng
+            if (_jobController.userLat.value != null && _jobController.userLng.value != null) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('المسافة القصوى: ${_localMaxDistanceKm.toStringAsFixed(0)} كم', style: GoogleFonts.tajawal(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurface)),
+                  Slider(
+                    min: 1,
+                    max: 50,
+                    divisions: 49,
+                    value: _localMaxDistanceKm,
+                    label: '${_localMaxDistanceKm.toStringAsFixed(0)} كم',
+                    onChanged: (v) {
+                      setState(() {
+                        _localMaxDistanceKm = v;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              );
+            } else {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  'لم يتم تحديد موقعك. لا يمكن تصفية النتائج حسب المسافة.',
+                  style: GoogleFonts.tajawal(fontSize: 12, color: cs.onSurface.withOpacity(0.7)),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+          }),
 
           // --- Sort Order Radio Buttons ---
           Text('ترتيب حسب', style: GoogleFonts.tajawal(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurface)),
           Column(
             children:
-                JobSortOrder.values.map((order) {
-                  return RadioListTile<JobSortOrder>(
-                    title: Text(_getSortOrderText(order), style: GoogleFonts.tajawal(fontSize: 14)),
-                    value: order,
-                    groupValue: _localSortOrder,
-                    onChanged: (JobSortOrder? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          _localSortOrder = newValue;
-                        });
-                      }
-                    },
-                  );
-                }).toList(),
+            JobSortOrder.values.map((order) {
+              return RadioListTile<JobSortOrder>(
+                title: Text(_getSortOrderText(order), style: GoogleFonts.tajawal(fontSize: 14)),
+                value: order,
+                groupValue: _localSortOrder,
+                onChanged: (JobSortOrder? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _localSortOrder = newValue;
+                    });
+                  }
+                },
+              );
+            }).toList(),
           ),
           const SizedBox(height: 20),
 
@@ -145,7 +165,13 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
                   onPressed: () {
                     _jobController.resetAllFilters();
                     widget.onClearSearch?.call();
-
+                    // Reset local state to reflect controller's reset
+                    setState(() {
+                      _localSelectedCity = null;
+                      _localSelectedJobType = null;
+                      _localMaxDistanceKm = _jobController.maxDistanceKm.value; // Reset to default
+                      _localSortOrder = _jobController.currentSortOrder.value;
+                    });
                     Get.back();
                   },
                   style: OutlinedButton.styleFrom(
@@ -160,7 +186,14 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    _jobController.updateFilteredJobs(city: _localSelectedCity ?? '', jobType: _localSelectedJobType ?? '', query: _jobController.currentQuery, filterByDistance: true);
+                    // Update the HomeController's maxDistanceKm with the slider's value
+                    _jobController.maxDistanceKm.value = _localMaxDistanceKm;
+                    _jobController.updateFilteredJobs(
+                      city: _localSelectedCity ?? '',
+                      jobType: _localSelectedJobType ?? '',
+                      query: _jobController.currentQuery, // Preserve current search query
+                      filterByDistance: true, // Always consider distance filter if applicable
+                    );
                     _jobController.changeSortOrder(_localSortOrder);
                     Get.back();
                   },
@@ -193,8 +226,6 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
         return 'الاسم (أ-ي)';
       case JobSortOrder.titleDesc:
         return 'الاسم (ي-أ)';
-      default:
-        return '';
     }
   }
 }

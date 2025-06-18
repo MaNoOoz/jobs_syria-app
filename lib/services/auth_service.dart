@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_storage/get_storage.dart';
 
+import '../controllers/home_controller.dart';
 import '../models.dart';
 import '../routes/app_pages.dart';
 import '../utils/storage_keys.dart';
@@ -19,7 +20,10 @@ class AuthService extends GetxController {
 
   @override
   void onInit() {
+
     super.onInit();
+    // Get.put(HomeController());
+
     // Bind firebaseUser stream to Firebase Auth state changes
     firebaseUser.bindStream(_auth.authStateChanges());
 

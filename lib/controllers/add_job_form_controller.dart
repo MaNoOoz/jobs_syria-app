@@ -11,11 +11,11 @@ import 'package:latlong2/latlong.dart';
 import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 
-import '../controllers/home_controller.dart';
+import 'home_controller.dart';
 import '../models.dart';
 import '../routes/app_pages.dart';
 import '../services/auth_service.dart';
-import 'map_picker_screen.dart'; // Make sure MapPickerScreen is imported
+import '../ui/map_picker_screen.dart'; // Make sure MapPickerScreen is imported
 
 class AddJobFormController extends GetxController {
   final HomeController _jobController = Get.find<HomeController>();
@@ -60,8 +60,6 @@ class AddJobFormController extends GetxController {
     'مؤقت'
   ];
 
-  // Cities for the dropdown, based on your previous `home_view.dart`
-  static const List<String> cities = ['دمشق', 'حلب', 'حمص', 'اللاذقية', 'طرطوس'];
 
   // Store the last valid non-remote location for easy revert
   double? _lastValidLat;
@@ -298,7 +296,6 @@ class AddJobFormController extends GetxController {
     return null;
   }
 
-  // Removed validateNumber method
 
   /// Specific validation for hashtags.
   String? validateHashtags(String? value) {
