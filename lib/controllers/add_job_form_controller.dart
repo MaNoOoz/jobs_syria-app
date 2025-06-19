@@ -334,16 +334,16 @@ class AddJobFormController extends GetxController {
         }
         break;
       case ContactType.telegram:
-        if (value.startsWith('@')) {
-          final usernameRegex = RegExp(r'^@[a-zA-Z0-9_]{5,32}$');
-          if (!usernameRegex.hasMatch(value)) {
-            return 'اسم مستخدم تيليجرام غير صحيح. يجب أن يبدأ بـ "@" ويحتوي على أحرف وأرقام وشرطات سفلية (5-32 حرفًا).';
-          }
-        } else {
-          final phoneRegex = RegExp(r'^\+[0-9]{7,15}$');
-          if (!phoneRegex.hasMatch(value)) {
-            return 'صيغة تيليجرام غير صحيحة (يجب أن تبدأ بـ "@" أو رقم هاتف دولي).';
-          }
+
+      // If the value doesn't start with '@', prepend it.
+        if (!value.startsWith('@')) {
+          value = '@$value';
+        }
+
+        // Validate username with '@' prepended
+        final usernameRegex = RegExp(r'^@[a-zA-Z0-9_]{5,32}$');
+        if (!usernameRegex.hasMatch(value)) {
+          return '  اسم مستخدم تيليجرام غير صحيح. 5 أحرف على الأقل';
         }
         break;
       case ContactType.facebook:
@@ -420,7 +420,7 @@ class AddJobFormController extends GetxController {
                   hintText = 'مثال: +9639991234567';
                   break;
                 case ContactType.telegram:
-                  hintText = 'مثال: @username';
+                  hintText = 'مثال: username';
                   break;
                 case ContactType.email:
                   hintText = 'مثال: example@example.com';

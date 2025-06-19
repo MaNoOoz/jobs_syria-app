@@ -1,4 +1,5 @@
 // lib/login_screen.dart
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -7,7 +8,8 @@ import 'package:quiz_project/utils/Constants.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:quiz_project/utils/storage_keys.dart';
 
-import '../routes/app_pages.dart'; // Make sure this is imported
+import '../routes/app_pages.dart';
+import '../utils/SharedWidgets.dart'; // Make sure this is imported
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -65,58 +67,65 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Image.asset(
-              APP_LOGO,
-              height: 150,
-            )
-                .animate()
-                .fadeIn(duration: 500.ms)
-                .scale(),
+            SharedWidgets().buildLogo(),
+
+            // Image.asset(
+            //   APP_LOGO,
+            //   height: 150,
+            // )
+            //     .animate()
+            //     .fadeIn(duration: 500.ms)
+            //     .scale(),
 
             const SizedBox(height: 30),
 
-            TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              textDirection: TextDirection.rtl,
-              decoration: InputDecoration(
-                labelText: 'البريد الإلكتروني',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+
+            FadeInDown(
+              child: TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                textDirection: TextDirection.rtl,
+                decoration: InputDecoration(
+                  labelText: 'البريد الإلكتروني',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  prefixIcon: const Icon(Icons.email),
                 ),
-                prefixIcon: const Icon(Icons.email),
-              ),
-            ).animate().fadeIn(delay: 200.ms),
+              )
+            ),
 
             const SizedBox(height: 15),
 
             // --- MODIFIED PASSWORD TEXTFIELD ---
-            TextField(
-              controller: passwordController,
-              // Use the state variable to control obscurity
-              obscureText: _isPasswordObscured,
-              textDirection: TextDirection.rtl,
-              decoration: InputDecoration(
-                labelText: 'كلمة المرور',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                prefixIcon: const Icon(Icons.lock),
-                // Add the visibility toggle icon button
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    // Change icon based on the state
-                    _isPasswordObscured ? Icons.visibility : Icons.visibility_off,
+            FadeInUp(
+              child: TextField(
+                controller: passwordController,
+                // Use the state variable to control obscurity
+                obscureText: _isPasswordObscured,
+                textDirection: TextDirection.rtl,
+                decoration: InputDecoration(
+                  labelText: 'كلمة المرور',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  onPressed: () {
-                    // Update the state to toggle visibility
-                    setState(() {
-                      _isPasswordObscured = !_isPasswordObscured;
-                    });
-                  },
+                  prefixIcon: const Icon(Icons.lock),
+                  // Add the visibility toggle icon button
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      // Change icon based on the state
+                      _isPasswordObscured ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      // Update the state to toggle visibility
+                      setState(() {
+                        _isPasswordObscured = !_isPasswordObscured;
+                      });
+                    },
+                  ),
                 ),
               ),
-            ).animate().fadeIn(delay: 300.ms),
+            ),
             // --- END OF MODIFICATION ---
 
             Obx(
@@ -128,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   rememberMe.value = newValue!;
                 },
               ),
-            ).animate().fadeIn(delay: 325.ms),
+            ).animate().fadeIn(delay: 1325.ms),
 
             Align(
               alignment: Alignment.centerLeft,
@@ -139,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(color: Colors.blue),
                 ),
               ),
-            ).animate().fadeIn(delay: 350.ms),
+            ).animate().fadeIn(delay: 1350.ms),
 
             const SizedBox(height: 20),
 
@@ -162,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             )
                 .animate()
-                .fadeIn(delay: 400.ms)
+                .fadeIn(delay: 1400.ms)
                 .then()
                 .shake(),
 
@@ -183,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(fontSize: 16),
                 ),
               ),
-            ).animate().fadeIn(delay: 500.ms),
+            ).animate().fadeIn(delay: 1500.ms).shake(),
 
             const SizedBox(height: 20),
 

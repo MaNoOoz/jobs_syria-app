@@ -64,7 +64,7 @@ class EditJobScreen extends StatelessWidget {
               TextFormField(
                 controller: controller.hashtagsController,
                 decoration: const InputDecoration(
-                  labelText: 'الهاشتاجات (مثال: #عمل_عن_بعد, #تسويق)',
+                  labelText: 'الهاشتاجات (مثال: عمل_عن_بعد, تسويق)',
                   border: OutlineInputBorder(),
                   hintText: 'افصل بين الهاشتاجات بفاصلة (,)',
                 ),

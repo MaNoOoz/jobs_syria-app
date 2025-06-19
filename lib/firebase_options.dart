@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyB15dVuMQaMZuNz41iK9CO3x82Pd8Q3wAY',
-    appId: '1:198955534903:android:f85c4f50d21f3aba43cdb2',
+    appId: '1:198955534903:android:43fe3a89dc85632f43cdb2',
     messagingSenderId: '198955534903',
     projectId: 'my-menue-app',
     storageBucket: 'my-menue-app.firebasestorage.app',

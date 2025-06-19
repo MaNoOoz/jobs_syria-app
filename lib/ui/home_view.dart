@@ -1,3 +1,4 @@
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -152,6 +153,34 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             const SizedBox(height: 16),
+            // SizedBox(
+            //   height: 100,
+            //   width: Get.width,
+            //   child: DefaultTextStyle(
+            //     textAlign: TextAlign.center,
+            //     // style: mainTitleBlack,
+            //     style: TextStyle(),
+            //     child: Center(
+            //       child: AnimatedTextKit(
+            //         animatedTexts: [
+            //           // TyperAnimatedText('👋  Hey , ', textAlign: TextAlign.center),
+            //           // TyperAnimatedText('جاهز لتحدي معلوماتك ؟؟ 🤔', textAlign: TextAlign.center),
+            //           // TyperAnimatedText('جاهز للتغلب على الخصوم ؟! 💪', textAlign: TextAlign.center),
+            //           // TyperAnimatedText('أجب على أكثر عدد ممكن من الأسئلة خلال 120 ثانية ', textAlign: TextAlign.center),
+            //           ScaleAnimatedText(' 🟢', textAlign: TextAlign.center),
+            //         ],
+            //         onTap: () {
+            //           print("Tap Event");
+            //         },
+            //         totalRepeatCount: 1,
+            //         pause: const Duration(seconds: 2),
+            //         repeatForever: true,
+            //         stopPauseOnTap: true,
+            //       ),
+            //     ),
+            //   ),
+            // ),
+
             // قائمة الوظائف
             Expanded(
               child: Obx(() {
