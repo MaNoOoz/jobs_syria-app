@@ -23,92 +23,67 @@ class AddJobFormController extends GetxController {
 
   final JobModel? initialJob;
 
-  AddJobFormController({this.initialJob}) {
-    if (initialJob != null) {
-      _populateForm(initialJob!);
-    }
-  }
+  AddJobFormController({this.initialJob});
 
+  // --- Form State and Controllers ---
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-
-  // Text Controllers
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descController = TextEditingController();
   final TextEditingController hashtagsController = TextEditingController();
   final TextEditingController locationTextController = TextEditingController();
   final TextEditingController cityController = TextEditingController();
   final TextEditingController contactValueController = TextEditingController();
-  // Removed minSalaryController and maxSalaryController
 
-  // Reactive state variables
-  final RxDouble latitude = 33.5138.obs; // Default to a central point in Syria (e.g., near Damascus)
+  final RxDouble latitude = 33.5138.obs;
   final RxDouble longitude = 36.2765.obs;
-
-  final RxList<ContactOption> contactOptions = <ContactOption>[].obs; // Corrected syntax here from `]}` to `[]`
+  final RxList<ContactOption> contactOptions = <ContactOption>[].obs;
   final Rx<ContactType?> chosenContactType = Rx<ContactType?>(null);
-  final RxString selectedJobType = 'دوام كامل'.obs; // Default to full-time
+  final RxString selectedJobType = 'دوام كامل'.obs;
   final RxBool isLoading = false.obs;
-
-  // New reactive variable for the 'وظيفة عن بعد؟' switch
   final RxBool isRemote = false.obs;
 
-  // Job type options
-  final List<String> jobTypes = [
-    'دوام كامل',
-    'دوام جزئي',
-    'عن بعد',
-    'مؤقت'
-  ];
+  final List<String> jobTypes = ['دوام كامل', 'دوام جزئي', 'عن بعد', 'مؤقت'];
 
-
-  // Store the last valid non-remote location for easy revert
+  // --- Private State for Location Reverting ---
   double? _lastValidLat;
   double? _lastValidLng;
   String? _lastValidLocationText;
   String? _lastValidCity;
-  String? _lastValidJobType = 'دوام كامل'; // Store the last valid non-remote job type
+  String? _lastValidJobType = 'دوام كامل';
 
   @override
   void onInit() {
     super.onInit();
-
-    // Initialize form fields if an initial job is provided (for editing)
     if (initialJob != null) {
       _populateForm(initialJob!);
-    } else {
-      // For new jobs, initialize with a default location (e.g., Damascus)
-      // and immediately try to reverse geocode it.
-      if (selectedJobType.value != 'عن بعد') {
-        _initializeDefaultLocation();
-      }
+    } else if (selectedJobType.value != 'عن بعد') {
+      _initializeDefaultLocation();
     }
-
-    // Listener for job type changes to affect location fields
-    ever(selectedJobType, (_) {
-      _handleJobTypeLocationLogic(selectedJobType.value);
-    });
-
-    // Explicitly handle initial state for `isRemote` based on `selectedJobType`
+    ever(selectedJobType, _handleJobTypeLocationLogic);
     isRemote.value = (selectedJobType.value == 'عن بعد');
   }
 
-  /// Helper to set initial default location and geocode it
-  Future<void> _initializeDefaultLocation() async {
-    latitude.value = 33.5138; // Damascus
-    longitude.value = 36.2765;
-    // locationTextController.text should be updated by reverse geocoding
-    await _reverseGeocodeAndSetCity(LatLng(latitude.value, longitude.value));
-    _lastValidLat = latitude.value;
-    _lastValidLng = longitude.value;
-    _lastValidLocationText = locationTextController.text;
-    _lastValidCity = cityController.text;
+  @override
+  void onClose() {
+    // Dispose all controllers
+    titleController.dispose();
+    descController.dispose();
+    hashtagsController.dispose();
+    locationTextController.dispose();
+    cityController.dispose();
+    contactValueController.dispose();
+    super.onClose();
   }
 
-  // New method: Populates the form fields with data from an existing JobModel
+  //================================================================================
+  // --- Form Initialization and Population ---
+  //================================================================================
+
   void _populateForm(JobModel job) {
     titleController.text = job.title;
     descController.text = job.description;
-    hashtagsController.text = job.hashtags.join(', ');
+    // IMPROVEMENT: Join without the '#' for easier parsing later
+    hashtagsController.text = job.hashtags.map((h) => h.substring(1)).join(', ');
     locationTextController.text = job.location ?? '';
     cityController.text = job.city;
 
@@ -122,138 +97,259 @@ class AddJobFormController extends GetxController {
     }
 
     selectedJobType.value = job.jobType;
-    isRemote.value = (job.jobType == 'عن بعد'); // Sync isRemote with jobType
+    isRemote.value = (job.jobType == 'عن بعد');
     contactOptions.value = List<ContactOption>.from(job.contactOptions);
   }
 
-  @override
-  void onClose() {
-    titleController.dispose();
-    descController.dispose();
-    hashtagsController.dispose();
-    locationTextController.dispose();
-    cityController.dispose();
-    contactValueController.dispose();
-    // Removed minSalaryController.dispose();
-    // Removed maxSalaryController.dispose();
-    super.onClose();
+  Future<void> _initializeDefaultLocation() async {
+    latitude.value = 33.5138; // Damascus
+    longitude.value = 36.2765;
+    await _reverseGeocodeAndSetCity(LatLng(latitude.value, longitude.value));
+    _saveLastValidLocation();
   }
 
-  /// Handles the toggling of the 'isRemote' switch.
+  //================================================================================
+  // --- Main Public Methods (Submit, Pick Location, etc.) ---
+  //================================================================================
+
+  /// Orchestrates the entire job submission process.
+  Future<void> submitJob() async {
+    // 1. Validate all form inputs and conditions
+    if (!_isFormValid()) return;
+
+    final String? currentUserId = _authService.currentUser.value?.uid;
+    if (currentUserId == null) {
+      Get.snackbar('خطأ', 'يجب تسجيل الدخول لإضافة أو تعديل وظيفة.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+      return;
+    }
+
+    isLoading.value = true;
+    try {
+      // 2. Build the JobModel with all data
+      final jobToSubmit = _buildJobModel(currentUserId);
+
+      // 3. Perform the database operation (add or update)
+      await _performDatabaseSubmission(jobToSubmit);
+
+      final successMessage =
+      initialJob == null ? 'تمت إضافة الوظيفة بنجاح!' : 'تم تحديث الوظيفة بنجاح!';
+      Get.snackbar('نجاح', successMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white);
+
+      Get.offAndToNamed(Routes.MAIN);
+    } catch (e) {
+      debugPrint('Error during job submission/update: $e');
+      Get.snackbar('خطأ', 'حدث خطأ أثناء حفظ الوظيفة: ${e.toString()}',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Handles location picking from the map.
+  Future<void> pickLocation(BuildContext context) async {
+    LatLng initialMapLocation = (latitude.value == 0.0 && longitude.value == 0.0)
+        ? const LatLng(33.5138, 36.2765) // Default to Damascus
+        : LatLng(latitude.value, longitude.value);
+
+    final result = await Get.to<LatLng>(() => MapPickerScreen(initialLocation: initialMapLocation));
+    if (result != null) {
+      latitude.value = result.latitude;
+      longitude.value = result.longitude;
+      await _reverseGeocodeAndSetCity(result);
+
+      // If user was in "remote" mode, switch them back to a physical job type
+      if (selectedJobType.value == 'عن بعد') {
+        selectedJobType.value = _lastValidJobType ?? 'دوام كامل';
+        isRemote.value = false;
+      }
+
+      _saveLastValidLocation();
+    }
+  }
+
+  //================================================================================
+  // --- NEW: Refactored Helper Methods for Submission ---
+  //================================================================================
+
+  /// NEW: Centralized validation method.
+  bool _isFormValid() {
+    if (!formKey.currentState!.validate()) {
+      Get.snackbar('خطأ في البيانات', 'الرجاء ملء جميع الحقول المطلوبة بشكل صحيح.',
+          backgroundColor: Colors.red, colorText: Colors.white);
+      return false;
+    }
+    if (!isRemote.value) {
+      if (latitude.value == 0.0 || longitude.value == 0.0) {
+        Get.snackbar('خطأ في الموقع', 'الرجاء اختيار موقع الوظيفة على الخريطة.',
+            backgroundColor: Colors.red, colorText: Colors.white);
+        return false;
+      }
+
+      // Relaxed city validation
+      if (cityController.text.isEmpty ||
+          cityController.text.toLowerCase().contains('خطأ')) {
+        Get.snackbar('خطأ في المدينة', 'الرجاء التأكد من تحديد موقع صالح على الخريطة.',
+            backgroundColor: Colors.red, colorText: Colors.white);
+        return false;
+      }
+    }
+    if (contactOptions.isEmpty) {
+      Get.snackbar('خطأ', 'الرجاء إضافة طريقة تواصل واحدة على الأقل.',
+          backgroundColor: Colors.red, colorText: Colors.white);
+      return false;
+    }
+    return true;
+  }
+
+  /// NEW: Parses hashtags and automatically adds '#' if missing.
+  List<String> _parseHashtags() {
+    if (hashtagsController.text.trim().isEmpty) return [];
+
+    return hashtagsController.text
+        .split(',')
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .map((tag) => tag.startsWith('#') ? tag : '#$tag')
+        .toList();
+  }
+
+  /// NEW: Builds the final JobModel object.
+  JobModel _buildJobModel(String ownerId) {
+    final parsedHashtags = _parseHashtags();
+
+    // Determine final location details based on 'isRemote'
+    final bool isJobRemote = isRemote.value;
+    final String finalCity = isJobRemote ? 'عن بعد' : cityController.text;
+    final String finalLocationText = isJobRemote ? 'عن بعد' : locationTextController.text;
+    final double finalLatitude = isJobRemote ? 0.0 : latitude.value;
+    final double finalLongitude = isJobRemote ? 0.0 : longitude.value;
+
+    if (initialJob == null) {
+      // Creating a new job
+      return JobModel(
+        id: const Uuid().v4(),
+        title: titleController.text.trim(),
+        description: descController.text.trim(),
+        city: finalCity,
+        jobType: selectedJobType.value,
+        location: finalLocationText,
+        latitude: finalLatitude,
+        longitude: finalLongitude,
+        createdAt: DateTime.now(),
+        hashtags: parsedHashtags,
+        contactOptions: contactOptions.toList(),
+        ownerId: ownerId,
+        distanceInKm: null,
+      );
+    } else {
+      // Updating an existing job
+      return initialJob!.copyWith(
+        title: titleController.text.trim(),
+        description: descController.text.trim(),
+        city: finalCity,
+        jobType: selectedJobType.value,
+        location: finalLocationText,
+        latitude: finalLatitude,
+        longitude: finalLongitude,
+        hashtags: parsedHashtags,
+        contactOptions: contactOptions.toList(),
+      );
+    }
+  }
+
+  /// NEW: Handles the final database call for add or update.
+  Future<void> _performDatabaseSubmission(JobModel job) async {
+    if (initialJob == null) {
+      // Add new job
+      debugPrint('Attempting to add new job: ${job.toMap()}');
+      await _jobController.addJob(job);
+      // Also update the user's list of created jobs
+      await _authService.addJobToUserList(job.id);
+    } else {
+      // Update existing job
+      debugPrint('Attempting to update job: ${job.toMap()}');
+      await _jobController.updateJob(job);
+    }
+  }
+
+  //================================================================================
+  // --- Location and Remote-Work Logic ---
+  //================================================================================
+
   void toggleRemote(bool value) {
     isRemote.value = value;
     if (value) {
       selectedJobType.value = 'عن بعد';
     } else {
-      // When switching off remote, revert to last non-remote type or default to full-time
       selectedJobType.value = _lastValidJobType ?? 'دوام كامل';
     }
   }
 
-  /// Logic to handle location fields based on job type (remote vs. physical).
-  Future<void> _handleJobTypeLocationLogic(String newType) async {
-    if (newType == 'عن بعد') {
-      // Store current physical location and job type before clearing for remote
-      _lastValidLat = latitude.value;
-      _lastValidLng = longitude.value;
-      _lastValidLocationText = locationTextController.text;
-      _lastValidCity = cityController.text;
-      _lastValidJobType = initialJob?.jobType ?? selectedJobType.value; // Capture previous job type
+  void _handleJobTypeLocationLogic(String newType) {
+    final isNowRemote = (newType == 'عن بعد');
 
-      // Clear and set to remote defaults
+    if (isNowRemote) {
+      _saveLastValidLocation();
       cityController.text = 'عن بعد';
       locationTextController.text = 'عن بعد';
       latitude.value = 0.0;
       longitude.value = 0.0;
     } else {
-      // When switching from 'عن بعد' to a physical job type
-      if (_lastValidLat != null && _lastValidLng != null &&
-          (_lastValidLat != 0.0 || _lastValidLng != 0.0)) {
-        // Revert to last valid physical location
-        latitude.value = _lastValidLat!;
-        longitude.value = _lastValidLng!;
-        locationTextController.text = _lastValidLocationText!;
-        cityController.text = _lastValidCity!;
+      // Only revert if we have valid previous location
+      if (_lastValidLat != null && _lastValidLng != null) {
+        _revertToLastValidLocation();
       } else {
-        // If no last valid, revert to initial default and re-geocode
-        await _initializeDefaultLocation();
+        // Initialize default if no previous location
+        _initializeDefaultLocation();
+      }
+    }
+
+    // Update remote status
+    isRemote.value = isNowRemote;
+  }
+
+  void _saveLastValidLocation() {
+    if (!isRemote.value) {
+      _lastValidLat = latitude.value;
+      _lastValidLng = longitude.value;
+      _lastValidLocationText = locationTextController.text;
+      _lastValidCity = cityController.text;
+      // Also save the job type if it's not 'عن بعد'
+      if (selectedJobType.value != 'عن بعد') {
+        _lastValidJobType = selectedJobType.value;
       }
     }
   }
 
-  /// Converts Coordinates to City Name using geocoding.
+  Future<void> _revertToLastValidLocation() async {
+    if (_lastValidLat != null && _lastValidLng != null && (_lastValidLat != 0.0 || _lastValidLng != 0.0)) {
+      latitude.value = _lastValidLat!;
+      longitude.value = _lastValidLng!;
+      locationTextController.text = _lastValidLocationText!;
+      cityController.text = _lastValidCity!;
+    } else {
+      await _initializeDefaultLocation();
+    }
+  }
 
-
+  //================================================================================
+  // --- Geocoding Logic (Split for Web/Mobile) ---
+  //================================================================================
 
   Future<void> _reverseGeocodeAndSetCity(LatLng latLng) async {
-    Logger().e('Reverse geocode attempt initiated: ${cityController.text}');
-
     try {
-      // Check if running on web to apply specific logic
       if (kIsWeb) {
-        Logger().e('Running on Web - Attempting geocoding via Nominatim API');
-
-        // Use Nominatim (OpenStreetMap) API for Web with Arabic results
-        final url = Uri.parse(
-            'https://nominatim.openstreetmap.org/reverse?lat=${latLng.latitude}&lon=${latLng.longitude}&format=json&addressdetails=1');
-
-        final response = await http.get(url, headers: {
-          'Accept-Language': 'ar', // Request results in Arabic
-        });
-
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          if (data['address'] != null) {
-            String displayCity = data['address']['city'] ??
-                data['address']['town'] ??
-                data['address']['village'] ??
-                'غير معروفة';
-            cityController.text = displayCity;
-
-            // Full address to be shown
-            locationTextController.text = data['display_name'] ?? 'خطأ في تحديد الموقع';
-
-            if (locationTextController.text.isEmpty) {
-              locationTextController.text = 'خطأ في تحديد الموقع';
-              Logger().e('Reverse geocoding failed: Empty location text');
-            }
-          } else {
-            cityController.text = 'غير معروفة';
-            locationTextController.text = 'الموقع غير متاح';
-            Logger().e('Reverse geocoding failed: No address found');
-          }
-        } else {
-          cityController.text = 'خطأ في تحديد المدينة';
-          locationTextController.text = 'خطأ في تحديد الموقع';
-          Logger().e('Geocoding request failed: ${response.statusCode}');
-        }
-        return;
-      }
-
-      // For non-web platforms (i.e., mobile), proceed with standard geocoding
-      List<Placemark> placemarks = await placemarkFromCoordinates(latLng.latitude, latLng.longitude);
-
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks.first;
-        String displayCity = place.administrativeArea ?? place.locality ?? place.name ?? 'غير معروفة';
-        cityController.text = displayCity;
-
-        locationTextController.text = [
-          place.street,
-          place.subLocality,
-          place.locality,
-          place.administrativeArea,
-          place.country
-        ].where((element) => element != null && element.isNotEmpty).join(', ');
-
-        if (locationTextController.text.isEmpty) {
-          locationTextController.text = 'خطأ في تحديد الموقع';
-          Logger().e('Reverse geocoding failed: Empty location text');
-        }
+        await _reverseGeocodeForWeb(latLng);
       } else {
-        cityController.text = 'غير معروفة';
-        locationTextController.text = 'الموقع غير متاح';
-        Logger().e('Reverse geocoding failed: No placemarks found');
+        await _reverseGeocodeForMobile(latLng);
       }
     } catch (e) {
       debugPrint('Reverse geocoding failed: $e');
@@ -262,32 +358,74 @@ class AddJobFormController extends GetxController {
     }
   }
 
-  /// Handles location picking from the map.
-  Future<void> pickLocation(BuildContext context) async {
-    LatLng initialMapLocation = LatLng(latitude.value, longitude.value);
-    if (latitude.value == 0.0 && longitude.value == 0.0) {
-      initialMapLocation = const LatLng(33.5138, 36.2765); // Damascus default for map picker
-    }
+  Future<void> _reverseGeocodeForWeb(LatLng latLng) async {
+    try {
+      final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?lat=${latLng.latitude}&lon=${latLng.longitude}&format=json&addressdetails=1');
+      final response = await http.get(url, headers: {'Accept-Language': 'ar'});
 
-    final result = await Get.to<LatLng>(() => MapPickerScreen(initialLocation: initialMapLocation));
-    if (result != null) {
-      latitude.value = result.latitude;
-      longitude.value = result.longitude;
-      await _reverseGeocodeAndSetCity(result);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final address = data['address'] as Map<String, dynamic>?;
 
-      if (selectedJobType.value == 'عن بعد') {
-        selectedJobType.value = 'دوام كامل';
-        isRemote.value = false;
+        // Improved city detection
+        final city = address?['city'] ??
+            address?['town'] ??
+            address?['village'] ??
+            address?['county'] ??
+            address?['state'] ??
+            'غير معروفة';
+
+        // Fallback to coordinates if no display name
+        final locationName = data['display_name']?.toString() ??
+            '${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}';
+
+        cityController.text = city;
+        locationTextController.text = locationName;
+      } else {
+        // Use coordinates as fallback
+        cityController.text = 'موقع غير معروف';
+        locationTextController.text = '${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}';
       }
-
-      _lastValidLat = latitude.value;
-      _lastValidLng = longitude.value;
-      _lastValidLocationText = locationTextController.text;
-      _lastValidCity = cityController.text;
-      _lastValidJobType = selectedJobType.value;
+    } catch (e) {
+      // Use coordinates on any error
+      cityController.text = 'موقع غير معروف';
+      locationTextController.text = '${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}';
     }
   }
+  Future<void> _reverseGeocodeForMobile(LatLng latLng) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(latLng.latitude, latLng.longitude);
 
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+
+        // Improved city detection
+        final city = place.locality ??
+            place.subAdministrativeArea ??
+            place.administrativeArea ??
+            'غير معروفة';
+
+        // Build location text safely
+        final locationParts = [
+          place.street,
+          place.subLocality,
+          place.locality,
+          place.administrativeArea
+        ].where((e) => e != null && e.isNotEmpty).join(', ');
+
+        cityController.text = city;
+        locationTextController.text = locationParts.isNotEmpty
+            ? locationParts
+            : '${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}';
+      } else {
+        cityController.text = 'موقع غير معروف';
+        locationTextController.text = '${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}';
+      }
+    } catch (e) {
+      cityController.text = 'موقع غير معروف';
+      locationTextController.text = '${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}';
+    }
+  }
   /// Generic validation for required text fields.
   String? validateRequired(String? value) {
     if (value == null || value.trim().isEmpty) {
@@ -514,143 +652,4 @@ class AddJobFormController extends GetxController {
         colorText: Colors.white);
   }
 
-  /// Submits the job data, including form validation.
-  Future<void> submitJob() async {
-    if (!formKey.currentState!.validate()) {
-      Get.snackbar('خطأ في البيانات', 'الرجاء ملء جميع الحقول المطلوبة بشكل صحيح.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
-      return;
-    }
-
-    // Additional validation for non-remote jobs requiring location
-    if (!isRemote.value && (latitude.value == 0.0 && longitude.value == 0.0)) {
-      Get.snackbar('خطأ في الموقع', 'الرجاء اختيار موقع الوظيفة على الخريطة.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
-      return;
-    }
-
-    if (!isRemote.value && (cityController.text.isEmpty || cityController.text == 'غير معروفة' || cityController.text == 'خطأ في تحديد المدينة')) {
-      Get.snackbar('خطأ في المدينة', 'الرجاء التأكد من تحديد مدينة صالحة.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
-      return;
-    }
-
-    if (contactOptions.isEmpty) {
-      Get.snackbar('خطأ', 'الرجاء إضافة طريقة تواصل واحدة على الأقل.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
-      return;
-    }
-
-    isLoading.value = true;
-    final String? currentUserId = _authService.currentUser.value?.uid;
-
-    if (currentUserId == null) {
-      isLoading.value = false;
-      Get.snackbar('خطأ', 'يجب تسجيل الدخول لإضافة أو تعديل وظيفة.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
-      return;
-    }
-
-    try {
-      JobModel jobToSubmit;
-      final parsedHashtags = hashtagsController.text
-          .split(',')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty && e.startsWith('#'))
-          .toList();
-
-      // Removed parsing of salaries
-
-      // Ensure that if it's a remote job, location data is consistently 'عن بعد' or 0.0
-      String finalLocationText = locationTextController.text;
-      String finalCity = cityController.text;
-      double finalLatitude = latitude.value;
-      double finalLongitude = longitude.value;
-
-      if (isRemote.value) {
-        finalLocationText = 'عن بعد';
-        finalCity = 'عن بعد';
-        finalLatitude = 0.0;
-        finalLongitude = 0.0;
-      }
-
-      if (initialJob == null) {
-        // ADD NEW JOB
-        final newJobId = const Uuid().v4();
-        jobToSubmit = JobModel(
-          id: newJobId,
-          title: titleController.text.trim(),
-          description: descController.text.trim(),
-          city: finalCity,
-          jobType: selectedJobType.value,
-          location: finalLocationText,
-          latitude: finalLatitude,
-          longitude: finalLongitude,
-          createdAt: DateTime.now(),
-          hashtags: parsedHashtags,
-          contactOptions: contactOptions.toList(),
-          ownerId: currentUserId,
-          distanceInKm: null,
-        );
-
-        debugPrint('Attempting to add new job: ${jobToSubmit.toMap()}');
-        await _jobController.addJob(jobToSubmit);
-
-        final UserModel? user = _authService.currentUser.value;
-        if (user != null) {
-          final updatedMyJobs = List<String>.from(user.myJobs);
-          updatedMyJobs.add(newJobId);
-          final updatedUser = user.copyWith(myJobs: updatedMyJobs);
-          await _authService.updateUserInFirestore(updatedUser.uid!, updatedUser.toMap());
-        }
-
-        Get.snackbar('نجاح', 'تمت إضافة الوظيفة بنجاح!',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
-            colorText: Colors.white);
-        Get.back();
-      } else {
-        // EDIT EXISTING JOB
-        jobToSubmit = initialJob!.copyWith(
-          title: titleController.text.trim(),
-          description: descController.text.trim(),
-          city: finalCity,
-          jobType: selectedJobType.value,
-          location: finalLocationText,
-          latitude: finalLatitude,
-          longitude: finalLongitude,
-          hashtags: parsedHashtags,
-          contactOptions: contactOptions.toList(),
-          // ownerId and createdAt should not change during update
-        );
-        debugPrint('Attempting to update job: ${jobToSubmit.toMap()}');
-        await _jobController.updateJob(jobToSubmit);
-
-        Get.snackbar('نجاح', 'تم تحديث الوظيفة بنجاح!',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
-            colorText: Colors.white);
-        Get.back();
-      }
-    } catch (e) {
-      debugPrint('Error during job submission/update: $e');
-      Get.snackbar('خطأ', 'حدث خطأ أثناء حفظ الوظيفة: ${e.toString()}',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
-    } finally {
-      isLoading.value = false;
-      Get.offAndToNamed(Routes.MAIN);
-    }
-  }
 }

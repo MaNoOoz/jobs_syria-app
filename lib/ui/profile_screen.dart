@@ -2,196 +2,197 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart'; // Ensure you have this
-import 'package:quiz_project/controllers/home_controller.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // For icons
 
-import '../auth/login_screen.dart';
-import '../models.dart';
+import '../controllers/home_controller.dart';
+import '../models.dart'; // For UserModel and AppRoles (and its extension)
 import '../routes/app_pages.dart';
-import '../services/auth_service.dart'; // Changed from AuthController
+import '../services/auth_service.dart';
 import '../utils/theme_service.dart';
-import 'my_ads_screen.dart';
+import 'my_ads_screen.dart'; // For navigation to MyAdsScreen
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Changed from AuthController to AuthService
     final AuthService authService = Get.find<AuthService>();
     final HomeController jobController = Get.find<HomeController>();
     final ThemeService themeService = Get.find<ThemeService>();
     final ColorScheme cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text('الملف الشخصي', style: GoogleFonts.tajawal(fontWeight: FontWeight.bold)),
-      //   backgroundColor: cs.primaryContainer, // Using primaryContainer for consistency
-      //   foregroundColor: cs.onPrimaryContainer, // Using onPrimaryContainer for consistency
-      //   centerTitle: true,
-      // ),
       body: Obx(() {
         final currentUser = authService.currentUser.value;
+        final bool isLoggedIn = authService.isLoggedIn;
 
-        if (currentUser == null) {
+        // Debug print to check the currentUser object
+        debugPrint('ProfileScreen - Current User (Observed): ${currentUser?.username}, Email: ${currentUser?.email}, Role: ${currentUser?.role}');
+
+        // Handle case where user is not logged in
+        if (!isLoggedIn) {
           return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('لا يوجد مستخدم مسجل الدخول.', style: GoogleFonts.tajawal(color: cs.onSurfaceVariant, fontSize: 16), textAlign: TextAlign.center),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Get.offAndToNamed(Routes.LOGIN); // Navigate to login screen
-                    },
-                    icon: const Icon(Icons.login),
-                    label: Text('تسجيل الدخول', style: GoogleFonts.tajawal(fontSize: 16)),
-                    style: ElevatedButton.styleFrom(backgroundColor: cs.primary, foregroundColor: cs.onPrimary, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_off, size: 80, color: cs.primary),
+                const SizedBox(height: 20),
+                Text(
+                  'الرجاء تسجيل الدخول لعرض ملفك الشخصي',
+                  style: GoogleFonts.tajawal(fontSize: 18, color: cs.onSurface),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: () => Get.offAllNamed(Routes.LOGIN), // Go to login screen
+                  icon: const Icon(Icons.login),
+                  label: Text('تسجيل الدخول', style: GoogleFonts.tajawal(fontSize: 16)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => authService.loginAnonymously(), // Allow anonymous login
+                  child: Text(
+                    'المتابعة كزائر',
+                    style: GoogleFonts.tajawal(fontSize: 16, color: cs.primary),
+                  ),
+                ),
+              ],
             ),
           );
         }
 
-        return ListView(
+        // If logged in, display profile content
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
-          children: [
-            // User Info Section
-            Card(
-              margin: const EdgeInsets.only(bottom: 20),
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('معلومات الحساب', style: GoogleFonts.tajawal(fontSize: 18, fontWeight: FontWeight.bold, color: cs.primary)),
-                    const Divider(height: 20, thickness: 1),
-                    Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // User Profile Card
+              Container(
+                width: double.infinity,
+                child: Card(
+                  // color: cs.surfaceContainerHigh,
+                  elevation: 1,
+
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  margin: const EdgeInsets.only(bottom: 24),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
                       children: [
-                        Icon(Icons.person, color: cs.onSurfaceVariant),
-                        const SizedBox(width: 8),
-                        Text("الإسم : ", style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),
-                        // Display username or email if username is null
-                        Text(currentUser.username ?? currentUser.email ?? 'لا يوجد اسم', style: GoogleFonts.tajawal(fontSize: 22, color: cs.onSurface, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Row(
-                    // children: [
-                    // Icon(Icons.badge, color: cs.onSurfaceVariant), // Changed icon to badge for role
-                    // const SizedBox(width: 8),
-                    // Text("نوع الحساب : ", style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),
-                    // Text(currentUser.role, style: GoogleFonts.tajawal(fontSize: 22, color: cs.onSurface, fontWeight: FontWeight.bold)),
-                    // ],
-                    // ),
-                    const SizedBox(height: 8),
-                    if (currentUser.email != null) // Display email if available
-                      Row(
-                        children: [
-                          Icon(Icons.email, color: cs.onSurfaceVariant),
-                          const SizedBox(width: 8),
-                          Text("البريد الإلكتروني : ", style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),
-                          Expanded(
-                            // Use Expanded to prevent overflow for long emails
-                            child: Text(
-                              currentUser.email!,
-                              style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface),
-                              overflow: TextOverflow.ellipsis, // Add ellipsis for long emails
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: cs.secondaryContainer,
+                          child: Icon(Icons.person, size: 60, color: cs.onSecondaryContainer),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          currentUser?.username ?? 'مستخدم', // Displays 'مستخدم' if username is null
+                          style: GoogleFonts.tajawal(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                        if (currentUser?.email != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            currentUser!.email!, // Displays email if not null
+                            style: GoogleFonts.tajawal(
+                              fontSize: 16,
+                              color: cs.onSurfaceVariant,
                             ),
                           ),
                         ],
-                      ),
-                    // Add more user details here if available in UserModel
-                  ],
-                ),
-              ),
-            ),
-
-            // App Features Section
-            Card(
-              margin: const EdgeInsets.only(bottom: 20),
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.favorite, color: cs.secondary),
-                    title: Text('الوظائف المفضلة', style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16, color: cs.onSurfaceVariant),
-                    onTap: () {
-                      Get.toNamed(Routes.FAVORITES);
-                    },
-                  ),
-                  const Divider(height: 0, thickness: 1, indent: 16, endIndent: 16),
-                  // Only show 'My Ads' if the user is an employer
-                  if (currentUser.role == AppRoles.employer)
-                    ListTile(
-                      leading: Icon(Icons.my_library_books_outlined, color: cs.secondary),
-                      title: Text('إعلاناتي', style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),
-                      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: cs.onSurfaceVariant),
-                      onTap: () {
-                        Get.to(() => const MyAdsScreen());
-                      },
+                        const SizedBox(height: 8),
+                        // Displaying the user's role
+                        // Container(
+                        //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        //   decoration: BoxDecoration(
+                        //     color: cs.primaryContainer,
+                        //     borderRadius: BorderRadius.circular(20),
+                        //   ),
+                        //   child: Text(
+                        //     // Use the displayName from the AppRoleExtension
+                        //     currentUser!.role,
+                        //     style: GoogleFonts.tajawal(
+                        //       fontSize: 14,
+                        //       fontWeight: FontWeight.bold,
+                        //       color: cs.onPrimaryContainer,
+                        //     ),
+                        //   ),
+                        // ),
+                      ],
                     ),
-                  const Divider(height: 0, thickness: 1, indent: 16, endIndent: 16),
-                  ListTile(
-                    leading: Icon(Icons.work, color: cs.tertiary),
-                    title: Text('طلبات التقديم (قريباً)', style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16, color: cs.onSurfaceVariant),
-                    onTap: () {
-                      Get.snackbar('قريباً', 'هذه الميزة قيد التطوير!', snackPosition: SnackPosition.BOTTOM, backgroundColor: cs.primaryContainer, colorText: cs.onPrimaryContainer);
-                    },
                   ),
-                ],
-              ),
-            ),
-
-            // Settings Section (can add theme toggle here)
-            Card(
-              margin: const EdgeInsets.only(bottom: 20),
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                children: [
-                  // ListTile(
-                  //   leading: Icon(Icons.brightness_6, color: cs.secondary),
-                  //   title: Text('الوضع الليلي', style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),
-                  //   trailing: Obx(() => Switch(
-                  //     value: themeService.isDarkMode.value,
-                  //     onChanged: (value) {
-                  //       themeService.toggleTheme();
-                  //     },
-                  //     activeColor: cs.primary,
-                  //   )),
-                  // ),
-                  // Add more settings here
-                ],
-              ),
-            ),
-
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20.0),
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: Text('تسجيل الخروج', style: GoogleFonts.tajawal(fontSize: 16, color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cs.error, // Use error color for logout
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                onPressed: () async {
-                  await authService.logout(); // Call logout on AuthService
-                  Get.offAndToNamed(Routes.LOGIN); // Navigate to login screen after logout)); // Navigate to login screen after logout
-                },
               ),
-            ),
-          ],
+
+
+              // My Ads (if employer)
+              if ( authService.firebaseUser.value?.isAnonymous == false) ...[
+                ListTile(
+                  leading: Icon(FontAwesomeIcons.briefcase, color: cs.primary),
+                  title: Text(
+                    'إعلاناتي',
+                    style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface),
+                  ),
+                  trailing: Icon(Icons.arrow_forward_ios, size: 16, color: cs.onSurfaceVariant),
+                  onTap: () {
+                    Get.to(() => const MyAdsScreen());
+                  },
+                  tileColor: cs.surfaceContainerLowest,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Favorite Ads
+              // ListTile(
+              //   leading: Icon(Icons.favorite, color: cs.error),
+              //   title: Text(
+              //     'المفضلة',
+              //     style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface),
+              //   ),
+              //   trailing: Icon(Icons.arrow_forward_ios, size: 16, color: cs.onSurfaceVariant),
+              //   onTap: () {
+              //     Get.toNamed(Routes.FAVORITES);
+              //   },
+              //   tileColor: cs.surfaceContainerLowest,
+              //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              //   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              // ),
+              const SizedBox(height: 12),
+
+
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: Text('تسجيل الخروج', style: GoogleFonts.tajawal(fontSize: 16, color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    // backgroundColor: cs.error,
+                    // foregroundColor: cs.onError,
+                    padding: const EdgeInsets.symmetric(vertical: 12,horizontal: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () async {
+                    await authService.logout();
+                    Get.offAllNamed(Routes.LOGIN);
+                  },
+                ),
+              ),
+            ],
+          ),
         );
       }),
     );

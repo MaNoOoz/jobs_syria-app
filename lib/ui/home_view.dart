@@ -29,7 +29,9 @@ class _HomePageState extends State<HomePage> {
     Get.bottomSheet(
       const JobFilterSortBottomSheet(),
       isScrollControlled: true, // Allows sheet to take full height if needed
-      backgroundColor: Theme.of(context).cardColor,
+      backgroundColor: Theme
+          .of(context)
+          .cardColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
     );
   }
@@ -78,7 +80,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs = Theme
+        .of(context)
+        .colorScheme;
     final jobController = Get.find<HomeController>();
 
     return Scaffold(
@@ -106,10 +110,12 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.end, // Align to end
               children: [
                 Expanded(
-                  child: Text(
-                    'النتائج (${_controller.filteredJobs.length})', // Show current job count
-                    style: GoogleFonts.tajawal(fontSize: 14, color: cs.onSurfaceVariant),
-                  ),
+                  child: Obx(() {
+                    return Text(
+                      'النتائج (${_controller.filteredJobs.length})', // Show current job count
+                      style: GoogleFonts.tajawal(fontSize: 14, color: cs.onSurfaceVariant),
+                    );
+                  }),
                 ),
 
                 SizedBox(width: 8),
@@ -120,7 +126,6 @@ class _HomePageState extends State<HomePage> {
                       // Reset all filters and sort order
                       jobController.currentCity = '';
                       jobController.currentJobType = '';
-                      jobController.maxDistanceKm.value = 10.0; // Reset to default
                       jobController.resetAllFilters();
 
                       jobController.changeSortOrder(JobSortOrder.newest); // Reset sort
@@ -202,10 +207,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// job_list_item.dart (No change, just for context)
-// lib/screens/job_list_item.dart (or wherever your JobListItem is defined)
-
-// lib/ui/widgets/job_list_item.dart (or wherever your JobListItem is defined)
 
 
 class JobListItem extends StatelessWidget {
@@ -263,8 +264,9 @@ class JobListItem extends StatelessWidget {
                     // Display distance if available
                     if (job.distanceInKm != null && job.jobType != 'عن بعد')
                       Text('تبعد: ${job.distanceInKm!.toStringAsFixed(1)} كم', style: GoogleFonts.tajawal(fontSize: 12, color: cs.onSurfaceVariant.withOpacity(0.7)))
-                    else if (job.jobType == 'عن بعد')
-                      Text('عن بعد', style: GoogleFonts.tajawal(fontSize: 12, color: cs.onSurfaceVariant.withOpacity(0.7))),
+                    else
+                      if (job.jobType == 'عن بعد')
+                        Text('عن بعد', style: GoogleFonts.tajawal(fontSize: 12, color: cs.onSurfaceVariant.withOpacity(0.7))),
                   ],
                 ),
               ),

@@ -20,7 +20,7 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
 
   late String? _localSelectedCity;
   late String? _localSelectedJobType;
-  late double _localMaxDistanceKm; // Local state for the slider
+  // Removed: late double _localMaxDistanceKm; // No longer needed for a slider
   late JobSortOrder _localSortOrder;
 
   static const List<String> _jobTypes = ['الكل', 'دوام كامل', 'دوام جزئي', 'عن بعد', 'مؤقت'];
@@ -30,15 +30,8 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
     super.initState();
     _localSelectedCity = _jobController.currentCity.isEmpty ? null : _jobController.currentCity;
     _localSelectedJobType = _jobController.currentJobType.isEmpty ? null : _jobController.currentJobType;
-    _localMaxDistanceKm = _jobController.maxDistanceKm.value; // Initialize from controller
+    // Removed: _localMaxDistanceKm = _jobController.maxDistanceKm.value; // No longer initialize from controller
     _localSortOrder = _jobController.currentSortOrder.value;
-
-    _jobController.loadJobCities();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override
@@ -46,155 +39,128 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
     final cs = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16.0, right: 16.0, top: 16.0),
-      child: ListView(
-        shrinkWrap: true,
-        physics: const ClampingScrollPhysics(),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(child: Container(height: 4, width: 40, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-          const SizedBox(height: 16),
-          Text('تصفية وفرز الوظائف', style: GoogleFonts.tajawal(fontSize: 20, fontWeight: FontWeight.bold, color: cs.onSurface)),
-          const SizedBox(height: 20),
-
-          // --- City Dropdown ---
-          Text('المدينة', style: GoogleFonts.tajawal(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurface)),
-          const SizedBox(height: 8),
-          Obx(
-                () => DropdownButtonFormField<String?>(
-              decoration: InputDecoration(
-                hintText: 'اختر المدينة',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-              value: _jobController.availableJobCities.contains(_localSelectedCity)
-                  ? _localSelectedCity
-                  : (_jobController.currentCity.isEmpty ? null : _jobController.currentCity),
-              items: _jobController.availableJobCities.map((city) => DropdownMenuItem<String?>(
-                value: city == 'الكل' ? null : city,
-                child: Text(city),
-              )).toList(),
-              onChanged: (v) {
-                setState(() {
-                  _localSelectedCity = v;
-                });
-              },
-            ),
+          Text(
+            'تصفية وفرز الوظائف',
+            style: GoogleFonts.tajawal(fontSize: 20, fontWeight: FontWeight.bold, color: cs.onSurface),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
-          // --- Job Type Dropdown ---
-          Text('نوع الوظيفة', style: GoogleFonts.tajawal(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurface)),
-          const SizedBox(height: 8),
+          // City Filter
           DropdownButtonFormField<String?>(
+            value: _localSelectedCity,
             decoration: InputDecoration(
-              hintText: 'اختر نوع الوظيفة',
+              labelText: 'المدينة',
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
-            value: _localSelectedJobType,
-            items: _jobTypes.map((type) => DropdownMenuItem<String?>(value: type == 'الكل' ? null : type, child: Text(type))).toList(),
-            onChanged: (v) {
+            hint: const Text('اختر مدينة'),
+            items: _jobController.availableJobCities.map((city) {
+              return DropdownMenuItem(
+                value: city == 'الكل' ? null : city, // Null for 'All'
+                child: Text(city),
+              );
+            }).toList(),
+            onChanged: (value) {
               setState(() {
-                _localSelectedJobType = v;
+                _localSelectedCity = value;
               });
             },
           ),
           const SizedBox(height: 16),
 
-          // --- Distance Slider ---
-          Obx(() {
-            // This Obx reacts to changes in _jobController.userLat and _jobController.userLng
-            if (_jobController.userLat.value != null && _jobController.userLng.value != null) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('المسافة القصوى: ${_localMaxDistanceKm.toStringAsFixed(0)} كم', style: GoogleFonts.tajawal(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurface)),
-                  Slider(
-                    min: 1,
-                    max: 50,
-                    divisions: 49,
-                    value: _localMaxDistanceKm,
-                    label: '${_localMaxDistanceKm.toStringAsFixed(0)} كم',
-                    onChanged: (v) {
-                      setState(() {
-                        _localMaxDistanceKm = v;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                ],
+          // Job Type Filter
+          DropdownButtonFormField<String?>(
+            value: _localSelectedJobType,
+            decoration: InputDecoration(
+              labelText: 'نوع الوظيفة',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            hint: const Text('اختر نوع الوظيفة'),
+            items: _jobTypes.map((type) {
+              return DropdownMenuItem(
+                value: type == 'الكل' ? null : type,
+                child: Text(type),
               );
-            } else {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  'لم يتم تحديد موقعك. لا يمكن تصفية النتائج حسب المسافة.',
-                  style: GoogleFonts.tajawal(fontSize: 12, color: cs.onSurface.withOpacity(0.7)),
-                  textAlign: TextAlign.center,
-                ),
-              );
-            }
-          }),
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _localSelectedJobType = value;
+              });
+            },
+          ),
+          const SizedBox(height: 16),
 
-          // --- Sort Order Radio Buttons ---
-          Text('ترتيب حسب', style: GoogleFonts.tajawal(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurface)),
-          Column(
-            children:
-            JobSortOrder.values.map((order) {
-              return RadioListTile<JobSortOrder>(
-                title: Text(_getSortOrderText(order), style: GoogleFonts.tajawal(fontSize: 14)),
-                value: order,
-                groupValue: _localSortOrder,
-                onChanged: (JobSortOrder? newValue) {
-                  if (newValue != null) {
+          // Removed Distance Filter Slider Section
+          // No longer needed as per your request
+
+          // Sort Order
+          Text(
+            'ترتيب حسب',
+            style: GoogleFonts.tajawal(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface),
+          ),
+          Wrap(
+            spacing: 8.0,
+            children: JobSortOrder.values.map((order) {
+              return ChoiceChip(
+                label: Text(_getSortOrderText(order)),
+                selected: _localSortOrder == order,
+                onSelected: (selected) {
+                  if (selected) {
                     setState(() {
-                      _localSortOrder = newValue;
+                      _localSortOrder = order;
                     });
                   }
                 },
+                selectedColor: cs.primaryContainer,
+                backgroundColor: cs.surfaceVariant,
+                labelStyle: GoogleFonts.tajawal(color: _localSortOrder == order ? cs.onPrimaryContainer : cs.onSurfaceVariant),
               );
             }).toList(),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
-          // --- Action Buttons (Apply & Reset) ---
+          // Action Buttons
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    _jobController.resetAllFilters();
-                    widget.onClearSearch?.call();
-                    // Reset local state to reflect controller's reset
+                    // Reset local states to defaults
                     setState(() {
                       _localSelectedCity = null;
                       _localSelectedJobType = null;
-                      _localMaxDistanceKm = _jobController.maxDistanceKm.value; // Reset to default
-                      _localSortOrder = _jobController.currentSortOrder.value;
+                      // Removed: _localMaxDistanceKm = 10.0; // Reset distance as well
+                      _localSortOrder = JobSortOrder.newest; // Reset to default sort
                     });
+                    _jobController.resetAllFilters(); // Reset controller's filters
                     Get.back();
                   },
                   style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: cs.outline),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    side: BorderSide(color: cs.primary),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  child: Text('إعادة تعيين الكل', style: GoogleFonts.tajawal(fontSize: 16, color: cs.primary)),
+                  child: Text('إعادة تعيين', style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurfaceVariant)),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    // Update the HomeController's maxDistanceKm with the slider's value
-                    _jobController.maxDistanceKm.value = _localMaxDistanceKm;
+                    // Apply button: Update filters in HomeController
                     _jobController.updateFilteredJobs(
                       city: _localSelectedCity ?? '',
                       jobType: _localSelectedJobType ?? '',
                       query: _jobController.currentQuery, // Preserve current search query
-                      filterByDistance: true, // Always consider distance filter if applicable
+                      // No filterByDistance: true needed here, as we're not explicitly filtering by distance anymore.
+                      // The default `false` will ensure the distance FILTER is skipped.
                     );
-                    _jobController.changeSortOrder(_localSortOrder);
+                    _jobController.changeSortOrder(_localSortOrder); // Apply the chosen sort order
                     Get.back();
                   },
                   style: ElevatedButton.styleFrom(
@@ -208,7 +174,7 @@ class _JobFilterSortBottomSheetState extends State<JobFilterSortBottomSheet> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 16), // Padding for safe area
         ],
       ),
     );
