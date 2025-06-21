@@ -1,9 +1,13 @@
+// lib/screens/settings_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:get/get.dart'; // Import Get for Get.find and Obx
 
 import '../utils/Constants.dart';
-
+import '../services/auth_service.dart'; // Ensure AuthService is imported
+import '../utils/theme_service.dart'; // Import ThemeService
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -11,12 +15,6 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: APP_MAIN_COLOR,
-      // appBar: AppBar(
-      //   centerTitle: true,
-      //   backgroundColor: APP_MAIN_COLOR,
-      //   title: const Text('الإعدادات', style: TextStyle(fontFamily: FONT_FAMILY, color: Colors.white, fontSize: 20)),
-      // ),
       body: const _SettingsBody(),
     );
   }
@@ -31,6 +29,8 @@ class _SettingsBody extends StatefulWidget {
 
 class _SettingsBodyState extends State<_SettingsBody> {
   bool _isLoading = false;
+  final AuthService _authService = Get.find<AuthService>(); // Get AuthService instance
+  final ThemeService _themeService = Get.find<ThemeService>(); // Get ThemeService instance
 
   final Map<Uri, String> _appUris = {
     Uri.parse(OtherApps): 'Other Apps',
@@ -50,8 +50,17 @@ class _SettingsBodyState extends State<_SettingsBody> {
     }
   }
 
-  List<SettingItem> _getSettingItems() =>
+  List<SettingItem> _getSettingItems(ColorScheme cs) =>
       [
+        // SettingItem(
+        //   title: "وضع السمة الداكنة",
+        //   icon: Icons.dark_mode,
+        //   isToggle: true,
+        //   toggleValue: _themeService.isDarkMode.value,
+        //   onToggle: (value) {
+        //     _themeService.toggleTheme();
+        //   },
+        // ),
         SettingItem(
           title: "سياسة الخصوصية",
           icon: Icons.privacy_tip,
@@ -78,36 +87,50 @@ class _SettingsBodyState extends State<_SettingsBody> {
           icon: Icons.update_outlined,
           onTap: (context) => _launchAppUri(Uri.parse(BASE_URL_flutter)),
         ),
-        // ... other items
       ];
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Directionality(
         textDirection: TextDirection.rtl,
         child: ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          itemCount: _getSettingItems().length,
-          itemBuilder: (context, index) => _buildSettingItem(_getSettingItems()[index]),
+          itemCount: _getSettingItems(cs).length,
+          itemBuilder: (context, index) => _buildSettingItem(_getSettingItems(cs)[index], cs),
         ),
       ),
     );
   }
 
-  Widget _buildSettingItem(SettingItem item) =>
-      Padding(
+  Widget _buildSettingItem(SettingItem item, ColorScheme cs) {
+    if (item.isToggle) {
+      return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Card(
-          // color: item.color.withOpacity(0.1),
-          child: ListTile(
-            title: Text(item.title, ),
-            trailing: const Icon(Icons.chevron_right,),
-            leading: Icon(item.icon,  size: 30),
-            onTap: () => item.onTap?.call(context),
-          ),
+          child: Obx(() => SwitchListTile(
+            title: Text(item.title),
+            value: _themeService.isDarkMode.value, // Directly observe the RxBool
+            onChanged: item.onToggle,
+            secondary: Icon(item.icon, size: 30),
+            activeColor: cs.primary,
+          )),
         ),
       );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Card(
+        child: ListTile(
+          title: Text(item.title),
+          trailing: const Icon(Icons.chevron_right),
+          leading: Icon(item.icon, size: 30),
+          onTap: () => item.onTap?.call(context),
+        ),
+      ),
+    );
+  }
 }
 
 class SettingItem {
@@ -115,11 +138,17 @@ class SettingItem {
   final IconData icon;
   final bool isLoading;
   final Function(BuildContext)? onTap;
+  final bool isToggle;
+  final bool? toggleValue;
+  final Function(bool)? onToggle;
 
   SettingItem({
     required this.title,
     required this.icon,
     this.isLoading = false,
     this.onTap,
+    this.isToggle = false,
+    this.toggleValue,
+    this.onToggle,
   });
 }

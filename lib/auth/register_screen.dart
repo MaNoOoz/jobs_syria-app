@@ -24,6 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // State variables to toggle password visibility
   bool _isPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
+  final RxBool _isLoading = false.obs; // Loading state for normal login
 
   @override
   void dispose() {
@@ -138,24 +139,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             const SizedBox(height: 30),
 
-            // Register Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _registerUser,
+            Obx( // Observe _isLoading for normal login button
+                  () => ElevatedButton(
+                onPressed: _isLoading.value ? null : _registerUser, // Disable when loading
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  backgroundColor: Get.theme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  backgroundColor: Theme.of(context).primaryColor,
                 ),
-                child: const Text(
+                child: _isLoading.value // Show loading indicator
+                    ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+                    : const Text(
                   'تسجيل',
-                  style: TextStyle(fontSize: 18, color: Colors.white),
+                  style: TextStyle(fontSize: 18),
                 ),
               ),
-            ).animate().fadeIn(delay: 500.ms).then().shake(),
+            ),
+            // Register Button
+
 
             const SizedBox(height: 15),
 
@@ -234,18 +245,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
+    _isLoading.value = true; // Set loading to true
 
     try {
       await _authService.registerWithEmail(
         email,
         password,
         username,
-        'user', // Default role
+        'user',
+
+        // Default role
       );
       // AuthService will handle navigation on success
     } catch (e) {
       debugPrint('Registration error in RegisterScreen: $e');
       // AuthService already shows snackbar for errors
+    }
+    finally {
+      _isLoading.value = false; // Set loading to false regardless of success/failure
     }
   }
 }

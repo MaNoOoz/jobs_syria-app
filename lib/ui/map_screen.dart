@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster_plus/flutter_map_marker_cluster_plus.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../controllers/home_controller.dart'; // Import HomeController
@@ -276,6 +277,8 @@ class MapScreen extends StatelessWidget {
 
   Widget _JobHorizontalListItem(
       BuildContext context, JobModel job, ColorScheme cs, MapControllerX mapCtrl) {
+    final dateFormat = DateFormat('yyyy-MM-dd HH:mm', 'ar');
+    final postedAt = dateFormat.format(job.createdAt.toLocal());
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 0),
       color: cs.surface,
@@ -287,7 +290,7 @@ class MapScreen extends StatelessWidget {
         },
         child: Container(
           width: MediaQuery.of(context).size.width * 0.8,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           child: IntrinsicHeight(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,7 +298,7 @@ class MapScreen extends StatelessWidget {
                 Align(
                   alignment: Alignment.topRight,
                   child: Text(
-                    job.createdAt.toIso8601String(),
+                    postedAt,
                     style: GoogleFonts.tajawal(
                         fontSize: 12, fontStyle: FontStyle.italic, color: cs.onSurfaceVariant),
                   ),

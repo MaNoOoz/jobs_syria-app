@@ -16,4 +16,4 @@ const String PP = "https://doc-hosting.flycricket.io/wzyf-swry/fa591ad4-074b-42e
 
 const String APP_LOGO ="assets/icon/icon.png";
 
-const String APP_NAME = "وظائف سوريا";
+const String APP_NAME = "حواليك وظيفة";

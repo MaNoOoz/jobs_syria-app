@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models.dart';
+import '../routes/app_pages.dart';
 import '../services/auth_service.dart';
 import '../controllers/home_controller.dart';
 import 'add_job_screen.dart';
@@ -61,17 +62,9 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
             icon: Icon(Icons.add_business, color: cs.onPrimaryContainer),
             tooltip: 'إضافة إعلان جديد',
             onPressed: () {
-              if (authService.currentUser.value?.role == AppRoles.employer) {
-                Get.to(() => const AddJobScreen());
-              } else {
-                Get.snackbar(
-                  'خطأ',
-                  'ليس لديك صلاحية لإضافة إعلانات.',
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
-                );
-              }
+              Get.toNamed(Routes.ADD_NEW);
+
+
             },
           ),
         ],

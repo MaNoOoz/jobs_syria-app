@@ -3,14 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // For icons
+import 'package:quiz_project/controllers/home_controller.dart';
 
-import '../controllers/home_controller.dart';
-import '../models.dart'; // For UserModel and AppRoles (and its extension)
+import '../auth/login_screen.dart'; // Ensure this path is correct if you use it
+import '../models.dart';
 import '../routes/app_pages.dart';
 import '../services/auth_service.dart';
 import '../utils/theme_service.dart';
-import 'my_ads_screen.dart'; // For navigation to MyAdsScreen
+import 'my_ads_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -25,176 +25,225 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       body: Obx(() {
         final currentUser = authService.currentUser.value;
-        final bool isLoggedIn = authService.isLoggedIn;
 
-        // Debug print to check the currentUser object
-        debugPrint('ProfileScreen - Current User (Observed): ${currentUser?.username}, Email: ${currentUser?.email}, Role: ${currentUser?.role}');
+        // Show a loading indicator or message if user data is not yet loaded
+        if (currentUser == null && authService.firebaseUser.value != null) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-        // Handle case where user is not logged in
-        if (!isLoggedIn) {
+        // Show guest user message if no user is logged in or user is anonymous
+        if (currentUser == null || currentUser.isAnonymous) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.person_off, size: 80, color: cs.primary),
-                const SizedBox(height: 20),
-                Text(
-                  'الرجاء تسجيل الدخول لعرض ملفك الشخصي',
-                  style: GoogleFonts.tajawal(fontSize: 18, color: cs.onSurface),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton.icon(
-                  onPressed: () => Get.offAllNamed(Routes.LOGIN), // Go to login screen
-                  icon: const Icon(Icons.login),
-                  label: Text('تسجيل الدخول', style: GoogleFonts.tajawal(fontSize: 16)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: cs.primary,
-                    foregroundColor: cs.onPrimary,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.person_off, size: 80, color: cs.primary),
+                  const SizedBox(height: 20),
+                  Text(
+                    'أنت تستخدم التطبيق كزائر. للاستفادة من جميع الميزات، يرجى تسجيل الدخول أو إنشاء حساب.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface),
                   ),
-                ),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () => authService.loginAnonymously(), // Allow anonymous login
-                  child: Text(
-                    'المتابعة كزائر',
-                    style: GoogleFonts.tajawal(fontSize: 16, color: cs.primary),
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    onPressed: () => Get.offAllNamed(Routes.LOGIN),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cs.primary,
+                      foregroundColor: cs.onPrimary,
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Text('تسجيل الدخول / إنشاء حساب', style: GoogleFonts.tajawal(fontSize: 16)),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         }
 
-        // If logged in, display profile content
-        return SingleChildScrollView(
+        // Display profile for logged-in users
+        return ListView(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // User Profile Card
-              Container(
-                width: double.infinity,
-                child: Card(
-                  // color: cs.surfaceContainerHigh,
-                  elevation: 1,
-
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  margin: const EdgeInsets.only(bottom: 24),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor: cs.secondaryContainer,
-                          child: Icon(Icons.person, size: 60, color: cs.onSecondaryContainer),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          currentUser?.username ?? 'مستخدم', // Displays 'مستخدم' if username is null
-                          style: GoogleFonts.tajawal(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: cs.onSurface,
-                          ),
-                        ),
-                        if (currentUser?.email != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            currentUser!.email!, // Displays email if not null
-                            style: GoogleFonts.tajawal(
-                              fontSize: 16,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                        // Displaying the user's role
-                        // Container(
-                        //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        //   decoration: BoxDecoration(
-                        //     color: cs.primaryContainer,
-                        //     borderRadius: BorderRadius.circular(20),
-                        //   ),
-                        //   child: Text(
-                        //     // Use the displayName from the AppRoleExtension
-                        //     currentUser!.role,
-                        //     style: GoogleFonts.tajawal(
-                        //       fontSize: 14,
-                        //       fontWeight: FontWeight.bold,
-                        //       color: cs.onPrimaryContainer,
-                        //     ),
-                        //   ),
-                        // ),
-                      ],
+          children: [
+            // User Info Card
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              margin: const EdgeInsets.only(bottom: 20),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: cs.primaryContainer,
+                      child: Icon(Icons.person, size: 60, color: cs.onPrimaryContainer),
                     ),
-                  ),
+                    const SizedBox(height: 15),
+
+                    const SizedBox(height: 5),
+                    if (currentUser.email != null)
+                      Text(
+                        currentUser.email!,
+                        style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurfaceVariant),
+                      ),
+                    const SizedBox(height: 10),
+                    // Container(
+                    //   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    //   decoration: BoxDecoration(
+                    //     color: cs.secondaryContainer,
+                    //     borderRadius: BorderRadius.circular(20),
+                    //   ),
+                    //   child: Text(
+                    //     "${currentUser.}",
+                    //     style: GoogleFonts.tajawal(fontSize: 14, color: cs.onSecondaryContainer),
+                    //   ),
+                    // ),
+                  ],
                 ),
               ),
+            ),
 
-
-              // My Ads (if employer)
-              if ( authService.firebaseUser.value?.isAnonymous == false) ...[
-                ListTile(
-                  leading: Icon(FontAwesomeIcons.briefcase, color: cs.primary),
-                  title: Text(
-                    'إعلاناتي',
-                    style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface),
+            // Profile Options
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Icon(Icons.edit, color: cs.primary),
+                    title: Text('تعديل الملف الشخصي', style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      // Navigate to an edit profile screen (you might need to create this)
+                      Get.snackbar('قريباً', 'ميزة تعديل الملف الشخصي ستتوفر قريباً!',
+                          snackPosition: SnackPosition.BOTTOM);
+                    },
                   ),
-                  trailing: Icon(Icons.arrow_forward_ios, size: 16, color: cs.onSurfaceVariant),
-                  onTap: () {
-                    Get.to(() => const MyAdsScreen());
-                  },
-                  tileColor: cs.surfaceContainerLowest,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // Favorite Ads
-              // ListTile(
-              //   leading: Icon(Icons.favorite, color: cs.error),
-              //   title: Text(
-              //     'المفضلة',
-              //     style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface),
-              //   ),
-              //   trailing: Icon(Icons.arrow_forward_ios, size: 16, color: cs.onSurfaceVariant),
-              //   onTap: () {
-              //     Get.toNamed(Routes.FAVORITES);
-              //   },
-              //   tileColor: cs.surfaceContainerLowest,
-              //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              //   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              // ),
-              const SizedBox(height: 12),
-
-
-              // Logout Button
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0),
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.logout, color: Colors.white),
-                  label: Text('تسجيل الخروج', style: GoogleFonts.tajawal(fontSize: 16, color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    // backgroundColor: cs.error,
-                    // foregroundColor: cs.onError,
-                    padding: const EdgeInsets.symmetric(vertical: 12,horizontal: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () async {
-                    await authService.logout();
-                    Get.offAllNamed(Routes.LOGIN);
-                  },
-                ),
+                  const Divider(indent: 16, endIndent: 16),
+                  if (currentUser.role == AppRoles.employer) // Only show for employers
+                    ListTile(
+                      leading: Icon(Icons.work, color: cs.primary),
+                      title: Text('إعلاناتي', style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        jobController.fetchMyJobs(); // Fetch jobs specific to this owner
+                        Get.to(() => const MyAdsScreen());
+                      },
+                    ),
+                  // const Divider(indent: 16, endIndent: 16),
+                  // ListTile for Dark Mode - (Moved to SettingsScreen as per previous discussion)
+                  // leading: Icon(Icons.dark_mode, color: cs.primary),
+                  // title: Text('الوضع الداكن', style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),
+                  // trailing: Obx(() => Switch(
+                  //   value: themeService.isDarkMode.value,
+                  //   onChanged: (value) {
+                  //     themeService.toggleTheme();
+                  //   },
+                  //   activeColor: cs.primary,
+                  // )),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+
+            // NEW: Delete Account Button
+            ElevatedButton.icon(
+              icon: const Icon(Icons.delete_forever, color: Colors.white),
+              label: Text('حذف الحساب', style: GoogleFonts.tajawal(fontSize: 16, color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                // backgroundColor: cs.error, // Use error color for deletion
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                _showDeleteAccountDialog(context, authService, currentUser);
+              },
+            ),
+            const SizedBox(height: 30), // Spacing below delete button
+
+            // Logout Button (retained)
+            ElevatedButton.icon(
+              icon: const Icon(Icons.logout, color: Colors.white),
+              label: Text('تسجيل الخروج', style: GoogleFonts.tajawal(fontSize: 16, color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: cs.errorContainer, // A neutral color for logout
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                await authService.logout();
+              },
+            ),
+          ],
         );
       }),
+    );
+  }
+
+  // NEW: Dialog for account deletion confirmation
+  void _showDeleteAccountDialog(BuildContext context, AuthService authService, UserModel currentUser) {
+    final TextEditingController passwordController = TextEditingController();
+    final bool isEmailUser = currentUser.email != null && !currentUser.isAnonymous;
+    final ColorScheme cs = Theme.of(context).colorScheme;
+
+    Get.dialog(
+      AlertDialog(
+        title: Text('تأكيد حذف الحساب', style: GoogleFonts.tajawal(fontWeight: FontWeight.bold, color: cs.error)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'هل أنت متأكد أنك تريد حذف حسابك؟ ستفقد جميع بياناتك، بما في ذلك إعلانات الوظائف والمفضلة.',
+              style: GoogleFonts.tajawal(fontSize: 12, color: cs.onSurface),
+            ),
+            const SizedBox(height: 5),
+            if (isEmailUser)
+              Text(
+                'الرجاء إدخال كلمة المرور الخاصة بك للمتابعة:',
+                style: GoogleFonts.tajawal(fontSize: 12, color: cs.onSurface),
+              ),
+            if (isEmailUser)
+              const SizedBox(height: 10),
+            if (isEmailUser)
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'كلمة المرور',
+                  border: const OutlineInputBorder(),
+                  labelStyle: GoogleFonts.tajawal(),
+                ),
+              ),
+            if (!isEmailUser) // Message for anonymous users
+              Text(
+                'بصفتك مستخدمًا زائرًا، سيتم حذف حسابك وبياناتك فورًا.',
+                style: GoogleFonts.tajawal(fontSize: 14, color: cs.onSurface),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('إلغاء', style: GoogleFonts.tajawal(color: cs.onSurfaceVariant)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back(); // Close the dialog immediately
+              await authService.deleteAccount(isEmailUser ? passwordController.text : null);
+              passwordController.dispose();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: cs.error,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('حذف', style: GoogleFonts.tajawal()),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -27,7 +27,11 @@ class AuthService extends GetxController {
     super.onInit();
     firebaseUser.bindStream(_auth.authStateChanges());
     // This worker automatically handles auth state changes.
-    ever(firebaseUser, _handleAuthStateChanges);
+    ever(firebaseUser, (User? user) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleAuthStateChanges(user);
+      });
+    });
   }
 
   //==========================================================================
@@ -44,7 +48,10 @@ class AuthService extends GetxController {
       }
     } else {
       currentUser.value = null; // Clear user data on logout.
-      Get.offAllNamed(Routes.LOGIN);
+      // Don't navigate if already on the login screen
+      if (Get.currentRoute != Routes.LOGIN) {
+        Get.offAllNamed(Routes.LOGIN);
+      }
     }
   }
 
@@ -73,7 +80,7 @@ class AuthService extends GetxController {
   Future<void> registerWithEmail(String email, String password, String username, String role) async {
     await _handleAuthRequest(() async {
       final userCredential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      await _createUserProfile(userCredential.user!, username: username, role: role,isAnonymous: false);
+      await _createUserProfile(userCredential.user!, username: username, role: role, isAnonymous: false);
     }, successMessage: 'Registration successful!');
   }
 
@@ -105,6 +112,85 @@ class AuthService extends GetxController {
           () => _auth.sendPasswordResetEmail(email: email),
       successMessage: 'Password reset email sent!',
     );
+  }
+
+  /// NEW: Handles user account and associated data deletion.
+  Future<void> deleteAccount(String? password) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _showErrorSnackbar('لا يوجد مستخدم مسجل الدخول.');
+      return;
+    }
+
+    // Anonymous users cannot reauthenticate with password.
+    // For anonymous users, we proceed directly to deletion.
+    if (user.isAnonymous) {
+      await _performAccountDeletion(user);
+      return;
+    }
+
+    // For non-anonymous users (email/password, Google, etc.), reauthenticate
+    // to ensure it's the legitimate user requesting deletion.
+    if (password == null || password.isEmpty) {
+      _showErrorSnackbar('الرجاء إدخال كلمة المرور لتأكيد الحذف.');
+      return;
+    }
+
+    try {
+      final AuthCredential credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+      await _performAccountDeletion(user);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password' || e.code == 'user-not-found') {
+        _showErrorSnackbar('كلمة المرور غير صحيحة. الرجاء المحاولة مرة أخرى.');
+      } else if (e.code == 'requires-recent-login') {
+        _showErrorSnackbar('الرجاء تسجيل الخروج ثم تسجيل الدخول مرة أخرى لإتمام عملية الحذف.');
+        await logout(); // Log out if reauthentication fails due to old login
+      } else {
+        _showErrorSnackbar('فشل إعادة المصادقة: ${_mapAuthError(e.code)}');
+      }
+    } catch (e) {
+      _showErrorSnackbar('حدث خطأ غير متوقع أثناء حذف الحساب: ${e.toString()}');
+    }
+  }
+
+  /// Internal helper to perform the actual deletion after reauthentication.
+  Future<void> _performAccountDeletion(User user) async {
+    try {
+      // 1. Delete user's posted jobs (if any)
+      final QuerySnapshot jobDocs = await _firestore
+          .collection('jobs')
+          .where('ownerId', isEqualTo: user.uid)
+          .get();
+
+      for (final doc in jobDocs.docs) {
+        await doc.reference.delete();
+      }
+      debugPrint('Deleted ${jobDocs.docs.length} jobs for user ${user.uid}');
+
+      // 2. Delete user document from Firestore
+      await _firestore.collection('users').doc(user.uid).delete();
+      debugPrint('Deleted user document ${user.uid} from Firestore.');
+
+      // 3. Delete user from Firebase Authentication
+      await user.delete();
+      debugPrint('Deleted Firebase Auth user ${user.uid}.');
+
+      _clearRememberMe();
+      currentUser.value = null; // Clear local user data
+      Get.snackbar('نجاح', 'تم حذف حسابك وجميع بياناتك بنجاح.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white);
+      Get.offAllNamed(Routes.LOGIN); // Navigate to login after deletion
+    } on FirebaseAuthException catch (e) {
+      _showErrorSnackbar('فشل حذف الحساب من Firebase: ${_mapAuthError(e.code)}');
+    } catch (e) {
+      _showErrorSnackbar('حدث خطأ أثناء حذف البيانات: ${e.toString()}');
+    }
   }
 
   //==========================================================================
@@ -201,13 +287,14 @@ class AuthService extends GetxController {
       case 'wrong-password': return 'Wrong password provided.';
       case 'network-request-failed': return 'Please check your internet connection.';
       case 'user-disabled': return 'This user account has been disabled.';
+      case 'requires-recent-login': return 'This operation is sensitive and requires recent authentication. Please log in again before retrying this request.';
       default: return 'An authentication error occurred.';
     }
   }
 
   /// Helper to show a standardized error snackbar.
   void _showErrorSnackbar(String message) {
-    Get.snackbar('Error', message,
+    Get.snackbar('خطأ', message,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.redAccent,
         colorText: Colors.white);
