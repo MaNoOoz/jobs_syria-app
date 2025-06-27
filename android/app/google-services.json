@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "198955534903",
+    "project_id": "my-menue-app",
+    "storage_bucket": "my-menue-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:198955534903:android:f85c4f50d21f3aba43cdb2",
+        "android_client_info": {
+          "package_name": "com.manoooz.quiz1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB15dVuMQaMZuNz41iK9CO3x82Pd8Q3wAY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:198955534903:android:43fe3a89dc85632f43cdb2",
+        "android_client_info": {
+          "package_name": "com.manoooz.syria_jobs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB15dVuMQaMZuNz41iK9CO3x82Pd8Q3wAY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

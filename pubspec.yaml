@@ -1,0 +1,114 @@
+name: quiz_project
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+dependencies:
+  flutter:
+    sdk: flutter
+#  audioplayers: ^6.4.0
+  url_launcher: ^6.3.1
+  google_mobile_ads: ^6.0.0
+#  advertising_id: ^2.7.1
+  get_storage: ^2.1.1
+  get: ^4.7.2
+  share_plus: ^11.0.0
+  animate_do: ^4.2.0
+  flutter_cache_manager:
+  flutter_feather_icons:
+  cached_network_image:
+  flutter_native_splash: ^2.4.6
+  animated_text_kit:
+  auto_size_text:
+  cupertino_icons:
+  logger:
+#  google_fonts: ^6.2.1
+  flutter_screenutil: ^5.9.3
+  double_tap_to_exit: ^1.0.3
+#  flutter_launcher_icons: ^0.14.3
+#  flutter_native_splash: ^2.4.6
+  http: ^1.3.0
+#  flutter_dotenv: ^5.2.1
+
+  # أضف هنا لاحقاً:
+  # connectivity_plus: ^5.0.2 # للتحقق من الاتصال
+  # drift: ^4.1.0 # لقاعدة البيانات المحلية
+  # sqlite3_flutter_libs: ^0.5.0 # لدعم Drift
+  # path_provider: ^2.1.1 # لدعم Drift
+  # qr_flutter: ^4.0.0 # لتوليد رموز QR
+  # http: ^1.1.0 # للاتصال بالخدمة الوسيطة
+
+  flutter_launcher_icons: ^0.14.3
+  firebase_core: ^3.13.1
+  firebase_crashlytics: ^4.3.6
+  firebase_auth: ^5.5.4
+  cloud_firestore: ^5.6.8
+  # خرائط جوجل
+#  google_maps_flutter: ^2.12.2
+  flutter_map: ^8.1.1
+  flutter_map_marker_cluster_plus: ^1.4.2
+
+  # للحصول على الموقع الجغرافي
+  geolocator: ^14.0.1
+  geocoding: ^4.0.0
+  # Local storage لتخزين device ID أو المفضلة
+  flutter_animate: ^4.5.2
+  # واجهات وتنسيقات إضافية
+  flutter_svg: ^2.1.0
+  intl: ^0.20.2
+  google_fonts: ^6.2.1
+  feather_icons:
+  font_awesome_flutter:
+  uuid: ^4.4.0 # Use the latest version
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+flutter_native_splash:
+  color: #000000
+  image: "assets/icon/icon.png"
+
+flutter_launcher_icons:
+#  android: "launcher_icon"
+#  ios: true
+#  image_path: "assets/icon/icon.png"
+#  remove_alpha_ios: true  # Remove the alpha channel from iOS icons
+#  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    background_color: "#ffffff"
+    theme_color: "#00796b"
+
+#  windows:
+#    generate: true
+#    image_path: "path/to/image.png"
+#    icon_size: 48 # min:48, max:256, default: 48
+#  macos:
+#    generate: true
+#    image_path: "path/to/image.png"
+
+
+flutter:
+  uses-material-design: true
+  generate: true  # Required for localization code generation
+
+  assets:
+    - assets/
+    - assets/icon/
+    - assets/images/
+
+  fonts:
+    - family: NotoSansArabic
+      fonts:
+        - asset: assets/fonts/NotoSansArabic-Regular.ttf
+        - asset: assets/fonts/NotoSansArabic-Bold.ttf
+          weight: 700
+
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/ibm_plex/IBMPlexSansArabic-Bold.ttf
+          weight: 700
