@@ -48,8 +48,11 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
+    final ColorScheme cs = Theme
+        .of(context)
+        .colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -62,28 +65,57 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
             icon: Icon(Icons.add_business, color: cs.onPrimaryContainer),
             tooltip: 'إضافة إعلان جديد',
             onPressed: () {
-              Get.toNamed(Routes.ADD_NEW);
-
-
+              if (authService.firebaseUser.value?.isAnonymous ?? true) {
+                Get.snackbar(
+                  'غير مسموح',
+                  'يجب تسجيل الدخول بحساب بريد إلكتروني لإضافة إعلانات',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+              } else {
+                Get.toNamed(Routes.ADD_NEW);
+              }
             },
           ),
         ],
       ),
       body: Obx(() {
-        final currentUser = authService.currentUser.value;
-        if (currentUser == null || currentUser.role != AppRoles.employer) {
+        // Check if user is anonymous (not logged in with email)
+        if (authService.firebaseUser.value?.isAnonymous ?? true) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
-              child: Text(
-                'أنت غير مصرح لك بنشر إعلانات أو عرضها. يرجى التواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.',
-                style: GoogleFonts.tajawal(color: cs.error, fontSize: 16),
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.block, size: 80, color: cs.error),
+                  const SizedBox(height: 16),
+                  Text(
+                    'يجب تسجيل الدخول بحساب بريد إلكتروني لعرض الإعلانات',
+                    style: GoogleFonts.tajawal(color: cs.error, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Navigate to login screen
+                      Get.offAllNamed(Routes.LOGIN);
+                    },
+                    child: Text('تسجيل الدخول', style: GoogleFonts.tajawal(fontSize: 16)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cs.primary,
+                      foregroundColor: cs.onPrimary,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
         }
 
+        // For logged-in email users
         if (homeCtrl.isLoadingOwnerJobs.value) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -128,8 +160,7 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
       }),
     );
   }
-}
-
+  }
 class _UserJobListItem extends StatelessWidget {
   final JobModel job;
   final ColorScheme cs;

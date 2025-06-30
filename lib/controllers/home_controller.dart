@@ -218,8 +218,8 @@ class HomeController extends GetxController {
   // ... (rest of your HomeController code remains the same) ...
   Future<void> addJob(JobModel job) async {
     _logger.d('Adding job: ${job.title}');
-    if (_authService.firebaseUser.value == null) {
-      Get.snackbar('خطأ', 'يجب تسجيل الدخول لإضافة إعلان',
+    if (_authService.firebaseUser.value?.isAnonymous ?? true) {
+      Get.snackbar('خطأ', 'يجب تسجيل الدخول بحساب بريد إلكتروني لإضافة إعلان',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);

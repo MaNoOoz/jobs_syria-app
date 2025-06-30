@@ -118,18 +118,20 @@ class AddJobFormController extends GetxController {
     if (!_isFormValid()) return;
 
     final String? currentUserId = _authService.currentUser.value?.uid;
-    if (currentUserId == null) {
-      Get.snackbar('خطأ', 'يجب تسجيل الدخول لإضافة أو تعديل وظيفة.',
+    // Add this check at the start of the method
+    if (_authService.firebaseUser.value?.isAnonymous ?? true) {
+      Get.snackbar('خطأ', 'يجب تسجيل الدخول بحساب بريد إلكتروني لإضافة وظيفة.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);
       return;
     }
 
+
     isLoading.value = true;
     try {
       // 2. Build the JobModel with all data
-      final jobToSubmit = _buildJobModel(currentUserId);
+      final jobToSubmit = _buildJobModel(currentUserId!);
 
       // 3. Perform the database operation (add or update)
       await _performDatabaseSubmission(jobToSubmit);

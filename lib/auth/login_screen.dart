@@ -1,15 +1,13 @@
 // lib/login_screen.dart
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:quiz_project/services/auth_service.dart';
-import 'package:quiz_project/utils/Constants.dart';
+import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:quiz_project/services/auth_service.dart';
 import 'package:quiz_project/utils/storage_keys.dart';
 
 import '../routes/app_pages.dart';
-import '../utils/SharedWidgets.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -242,8 +240,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   () => ElevatedButton(
                 onPressed: _isLoading.value ? null : _login, // Disable when loading
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Get.theme.primaryColor,
+                  backgroundColor: cs.secondaryContainer,
                   foregroundColor: Colors.white,
+
+                  // foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -264,7 +264,33 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
+            // const SizedBox(height: 40),
+
+            // NEW: Updated "Guest Login" button with loading state
+
+            Obx(
+                  () {
+                return TextButton(
+                  onPressed: _isGuestLoading.value ? null : _loginAnonymouslyAction,
+                  style: ElevatedButton.styleFrom(
+                    // backgroundColor: cs.secondaryContainer,
+                    // foregroundColor: cs.onSecondaryContainer,
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ), // Disable when guest loading
+
+
+                  child: Text(
+                    _isGuestLoading.value ? 'جاري الدخول...' : 'الدخول كزائر',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
             TextButton(
               onPressed: () {
                 Get.toNamed(Routes.REGISTER);
@@ -272,35 +298,6 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(
                 'ليس لديك حساب؟ تسجيل الآن',
                 style: TextStyle(color: cs.primary, fontSize: 16),
-              ),
-            ),
-            const SizedBox(height: 20),
-            // NEW: Updated "Guest Login" button with loading state
-            Obx(
-                  () => ElevatedButton.icon(
-                onPressed: _isGuestLoading.value ? null : _loginAnonymouslyAction, // Disable when guest loading
-                icon: _isGuestLoading.value
-                    ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-                    : const Icon(Icons.person),
-                label: Text(
-                  _isGuestLoading.value ? 'جاري الدخول...' : 'الدخول كزائر',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cs.secondaryContainer,
-                  foregroundColor: cs.onSecondaryContainer,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
               ),
             ),
           ],

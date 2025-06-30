@@ -123,7 +123,7 @@ class ProfileScreen extends StatelessWidget {
                     },
                   ),
                   const Divider(indent: 16, endIndent: 16),
-                  if (currentUser.role == AppRoles.employer) // Only show for employers
+                  // if (currentUser.role == AppRoles.employer) // Only show for employers
                     ListTile(
                       leading: Icon(Icons.work, color: cs.primary),
                       title: Text('إعلاناتي', style: GoogleFonts.tajawal(fontSize: 16, color: cs.onSurface)),

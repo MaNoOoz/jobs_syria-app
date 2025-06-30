@@ -38,6 +38,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme; // Define cs for color scheme
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('تسجيل مستخدم جديد'),
@@ -143,8 +145,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   () => ElevatedButton(
                 onPressed: _isLoading.value ? null : _registerUser, // Disable when loading
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Get.theme.primaryColor,
-                  foregroundColor: Colors.white,
+                  // backgroundColor: cs.primary,
+                  // foregroundColor: Colors.white,
+
                   padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -177,13 +180,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 text: TextSpan(
                   text: 'لديك حساب بالفعل؟ ',
                   style: TextStyle(color: Colors.grey[600]),
-                  children: const [
+                  children: [
                     TextSpan(
                       text: 'تسجيل الدخول',
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(color: cs.primary, fontSize: 16),
+
                     ),
                   ],
                 ),
